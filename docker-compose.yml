@@ -1,0 +1,71 @@
+# Development-only compose scaffold.
+# Services are placeholders until application code and Dockerfiles exist.
+services:
+  web:
+    image: node:22-alpine
+    working_dir: /workspace
+    command: ["sh", "-c", "echo 'web placeholder: apps/web' && sleep infinity"]
+    volumes:
+      - .:/workspace
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  api:
+    image: python:3.12-slim
+    working_dir: /workspace
+    command: ["sh", "-c", "echo 'api placeholder: apps/api' && sleep infinity"]
+    volumes:
+      - .:/workspace
+    environment:
+      APP_ENV: dev
+      TRADING_MODE: observe
+      LIVE_TRADING_ENABLED: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tcp_dev
+      POSTGRES_USER: tcp_dev
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  postgres-data:
+  redis-data:
+  grafana-data:
