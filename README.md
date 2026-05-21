@@ -60,6 +60,10 @@ Exchange secrets must remain backend-only. The frontend must never receive excha
 
 The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). It is phase-gated rather than date-based, with frontend control mapping first, Safety Spine before strategy, `PAPER` as the first full user-facing mode, Binance testnet as an internal validation lane after paper, `LIVE` introduced first with read-only credentials, and Portfolio Margin treated as later research.
 
+## Local Bootstrap
+
+Use `make up` to start the local development stack. It is intended to start the frontend placeholder, API, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, and live trading disabled. Binance credentials are not required for local bootstrap.
+
 ## Development Status
 
 This is a professional repository skeleton. Implementation code will be added incrementally only after the relevant control, risk, testing, and documentation expectations are clear.
