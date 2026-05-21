@@ -8,7 +8,7 @@ Models must be governed as deployable artifacts with traceable data, features, e
 - Feature versioning: features must be reproducible by version and tied to source data windows.
 - Training data windows: training, validation, and test windows must be explicit and recorded.
 - Backtest approval: a model must pass documented backtest criteria before paper evaluation.
-- Paper approval: a model must pass paper-trading evaluation before any live-readonly or live-trade consideration.
+- Paper approval: a model must pass paper-trading evaluation before internal Binance testnet validation, `LIVE` read-only validation, or live-trade consideration.
 - Human approval before live deployment: live use requires explicit human approval and configuration gates.
 - Model decision records: model outputs must be recorded with inputs, feature versions, model version, timestamp, confidence, and resulting action or non-action.
 - Explainability requirement: model-assisted decisions must be explainable enough for operators to understand why a recommendation or command was produced.
@@ -17,4 +17,4 @@ Models must be governed as deployable artifacts with traceable data, features, e
 
 ## Deployment Posture
 
-No model should be able to bypass command validation, risk checks, portfolio checks, execution checks, or live-trading gates. Models and strategies must never directly call the exchange connector.
+No model should be able to bypass command validation, risk checks, portfolio checks, execution checks, audit, reconciliation, or live-trading gates. MLOps approval states can describe readiness, but they must never authorize execution on their own. Models and strategies must never directly call the exchange connector.

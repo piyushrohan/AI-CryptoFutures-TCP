@@ -1,6 +1,6 @@
 # System Overview
 
-AI-CryptoFutures-TCP is intended to be a frontend-first Trading Control Platform rather than an autonomous trading bot. The frontend is the operator control tower for observe, paper, testnet, live-readonly, live-trade approval, training, evaluation, backtesting, strategy sessions, model registry workflows, panic controls, audit review, and model decision inspection.
+AI-CryptoFutures-TCP is intended to be a frontend-first Trading Control Platform rather than an autonomous trading bot. The frontend exposes only `PAPER` and `LIVE` as primary operator modes while acting as the control tower for observe-only session state, paper workflows, internal testnet validation lanes, `LIVE` read-only inspection, live-trade approval, training, evaluation, backtesting, strategy sessions, model registry workflows, panic controls, audit review, and model decision inspection.
 
 ## Target Flow
 
@@ -15,7 +15,7 @@ Frontend Control Plane
 
 The frontend control plane presents account state, market state, model decisions, operator controls, approvals, training and evaluation workflows, backtesting, strategy sessions, panic actions, and audit visibility. It never receives exchange secrets and never signs exchange requests.
 
-The backend API gateway authenticates users, validates commands, enforces operating mode, writes audit records, and routes requests to domain services.
+The backend API gateway authenticates users, validates commands, enforces operator-mode, venue-target, credential-scope, trading-gate, autonomy-stage, and MLOps-state constraints, writes audit records, and routes requests to domain services.
 
 The risk, portfolio, strategy, and execution core validates every order intent before it can reach an exchange or simulator. The risk engine can veto any command. Portfolio checks verify exposure, margin, hedge-mode books, funding exposure, liquidation buffer, and command consistency. Execution checks translate approved intents into venue-specific requests.
 

@@ -10,7 +10,7 @@ The portfolio engine should support:
 
 - Paper portfolios.
 - Testnet portfolios.
-- Live-readonly portfolios.
+- `LIVE` read-only portfolios.
 - Future live-trade portfolios.
 - Multi-symbol exposure.
 - Hedge-mode independent `LONG` and `SHORT` books.

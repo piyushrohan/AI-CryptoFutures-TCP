@@ -82,7 +82,10 @@ Tiny live orders may be submitted only after explicit per-action human approval 
 
 Required gates:
 
-- `live-trade` mode explicitly enabled.
+- `operator_mode=live` explicitly enabled.
+- `venue_target=binance_live` explicitly enabled.
+- `credential_scope=trading` explicitly enabled.
+- A live trading `trading_gate` explicitly approved.
 - Live trading explicitly enabled.
 - Per-action human approval.
 - Tiny notional limits.
@@ -106,7 +109,7 @@ Required gates:
 
 ## Stage 7: Scaled Live Autonomous
 
-Scaled live autonomous trading is the most mature stage and should be considered only after extensive evidence from paper, testnet, tiny live with approval, and tiny live autonomous stages.
+Scaled live autonomous trading is the most mature stage and should be considered only after extensive evidence from paper, internal testnet validation, tiny live with approval, and tiny live autonomous stages.
 
 Required gates:
 

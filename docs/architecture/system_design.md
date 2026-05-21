@@ -4,6 +4,8 @@
 
 AI-CryptoFutures-TCP is a private, frontend-first Trading Control Platform for AI-assisted crypto futures operations. The first target venue is Binance USDⓈ-M Futures, with paper trading and Binance testnet workflows preceding any live capability.
 
+The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
+
 The platform mission is to give an operator a control tower for market observation, manual order intent creation, model decision review, paper execution, testnet execution, portfolio supervision, risk enforcement, auditability, training, evaluation, backtesting, strategy sessions, model deployment, and future gated live trading.
 
 This is not a simple bot. The system is designed as a governed trading platform where the frontend is the primary human control surface, backend services validate all commands, independent risk controls can veto any action, and exchange secrets remain isolated from the browser.
@@ -18,35 +20,90 @@ The browser must never sign Binance requests, hold exchange credentials, or dire
 
 The platform is not intended to support withdrawals, custody operations, unmanaged secrets, opaque model decisions, or strategy-specific risk shortcuts.
 
-## 3. Operating Modes
+## 3. Operator Mode, Venue Target, Gates, and Lanes
 
-### observe
+The frontend should expose only two primary operator modes:
 
-`observe` is the default mode for local development and safe production inspection. The platform may display market data, account snapshots where configured, model outputs, audit records, and risk state. It must not submit orders to any venue.
+- `PAPER`: the first full user-facing mode.
+- `LIVE`: introduced later, initially as read-only.
 
-Command handlers in `observe` mode should reject order-creating actions and record the rejection when appropriate.
+The backend must keep more precise internal state. The simple two-mode UI must not hide, weaken, or bypass live gates, risk checks, portfolio checks, execution checks, MLOps approval states, audit, or reconciliation.
 
-### paper
+### operator_mode
 
-`paper` mode routes approved order intents to the internal paper exchange. It is used for end-to-end workflow testing, operator training, model evaluation, and risk-control validation without external venue side effects.
+- `paper`: safe operator-facing mode for internal paper workflows and later internal testnet validation lanes.
+- `live`: operator-facing live account context, introduced first with read-only credentials.
 
-Paper trading should model fills, fees, mark prices, funding assumptions, order states, hedge-mode books, and reconciliation events clearly enough to test platform behavior. It should not be treated as proof that a strategy is profitable.
+### venue_target
 
-### testnet
+- `internal_paper`: internal simulator and first full execution target.
+- `binance_testnet`: internal Binance USDⓈ-M Futures validation lane, not a top-level operator mode.
+- `binance_live`: live Binance USDⓈ-M Futures account target.
 
-`testnet` mode routes approved order intents to Binance USDⓈ-M futures testnet through backend-only signing and venue adapters. It validates exchange integration, order translation, reconciliation, and operational workflows before live access is considered.
+### credential_scope
 
-Testnet mode still requires command validation, audit records, risk checks, portfolio checks, and execution checks.
+- `none`: no exchange credentials required.
+- `read_only`: live account inspection only.
+- `trading`: trading-capable credentials, usable only behind explicit gates.
 
-### live-readonly
+### trading_gate
 
-`live-readonly` mode permits live account visibility without trading permissions. It is intended for balance, position, open order, margin, liquidation estimate, and audit visibility using restricted read-only credentials.
+- `locked`: trading unavailable.
+- `approval_required`: trading unavailable until explicit human approval.
+- `tiny_live`: tiny live research limits only.
+- `armed`: live trading gate armed for an approved workflow.
+- `halted`: trading blocked by operator or system halt.
 
-The system must reject order submission in `live-readonly` mode, even if downstream code paths are available.
+### autonomy_stage
 
-### live-trade
+- `observe_only`
+- `suggest_only`
+- `human_approval`
+- `paper_auto`
+- `testnet_auto`
+- `tiny_live_auto`
+- `scaled_live_auto`
 
-`live-trade` mode is the only mode that may submit orders to a live exchange. It must be disabled by default and guarded by explicit environment settings, configuration files, operator approval, restricted API keys, risk-engine availability, portfolio-engine availability, execution-engine availability, and audit logging.
+Observe is an autonomy stage or session state, not a top-level operator mode.
+
+### mlops_approval_state
+
+- `research_candidate`
+- `backtest_approved`
+- `paper_approved`
+- `testnet_validated`
+- `live_readonly_validated`
+- `live_trade_candidate`
+- `live_trade_approved`
+
+MLOps approval can describe model or strategy readiness, but it must never bypass risk gates, live gates, portfolio checks, execution checks, audit, or reconciliation.
+
+### Examples
+
+Safe default config:
+
+```yaml
+operator_mode: paper
+venue_target: internal_paper
+credential_scope: none
+trading_gate: locked
+autonomy_stage: observe_only
+mlops_approval_state: research_candidate
+live_trading_enabled: false
+```
+
+Live read-only config:
+
+```yaml
+operator_mode: live
+venue_target: binance_live
+credential_scope: read_only
+trading_gate: locked
+autonomy_stage: observe_only
+live_trading_enabled: false
+```
+
+Binance testnet is an internal validation lane, typically `operator_mode=paper` with `venue_target=binance_testnet`. `LIVE` read-only is `operator_mode=live`, `credential_scope=read_only`, and `trading_gate=locked`. Live-trade capability is `operator_mode=live`, `credential_scope=trading`, and explicit live trading gates.
 
 If any live gate is missing, stale, inconsistent, or disabled, the system must fail closed.
 
@@ -95,18 +152,19 @@ Related design documents:
 - [Margin and Exposure Model](../portfolio/margin_and_exposure_model.md) defines future portfolio accounting.
 - [Microstructure Research Plan](../mlops/microstructure_research_plan.md) defines scalping feature and target research.
 - [Autonomy Ladder](../risk/autonomy_ladder.md) defines staged autonomy approval gates.
+- [Developer Roadmap](../roadmap/developer_roadmap.md) defines phase-gated implementation order.
 
 ## 6. Service Boundaries
 
 ### web frontend
 
-The web frontend is the operator control tower. It shows market state, order books, account state, portfolio exposure, risk status, model decision records, manual trading controls, paper/testnet/live-readonly mode indicators, live-trade approval gates, training, evaluation, backtesting, model registry, strategy sessions, panic controls, and audit history.
+The web frontend is the operator control tower. It shows market state, order books, account state, portfolio exposure, risk status, model decision records, manual trading controls, `PAPER` and `LIVE` mode indicators, internal lane status, live approval gates, training, evaluation, backtesting, model registry, strategy sessions, panic controls, and audit history.
 
 It must not hold exchange secrets, sign exchange requests, or call authenticated exchange APIs directly.
 
 ### API gateway
 
-The API gateway receives frontend commands, authenticates requests, performs coarse authorization, validates request schemas, enforces operating mode, assigns command identifiers, and routes commands to domain services.
+The API gateway receives frontend commands, authenticates requests, performs coarse authorization, validates request schemas, enforces the operator-mode, venue, credential, trading-gate, autonomy-stage, and MLOps-state tuple, assigns command identifiers, and routes commands to domain services.
 
 It is the first backend enforcement layer, not a pass-through proxy.
 
@@ -114,7 +172,7 @@ It is the first backend enforcement layer, not a pass-through proxy.
 
 The auth service owns user identity, sessions, roles, permissions, approval requirements, and operator action authorization.
 
-Future roles should distinguish read-only observation, paper trading, testnet trading, live-readonly inspection, live-trade approval, panic controls, and administrative configuration.
+Future roles should distinguish read-only observation, paper trading, internal testnet validation, live read-only inspection, live-trade approval, panic controls, and administrative configuration.
 
 ### market data service
 
@@ -174,7 +232,7 @@ Backtests are approval inputs, not live-trading authorization.
 
 The paper exchange simulates venue behavior for approved paper orders. It owns simulated order acceptance, rejection, fills, cancellations, fees, funding assumptions, balances, positions, and reconciliation events.
 
-It should be close enough to Binance USDⓈ-M futures behavior to test workflows while remaining clearly separate from real exchange connectivity.
+It should be close enough to Binance USDⓈ-M Futures behavior to test workflows while remaining clearly separate from real exchange connectivity.
 
 ### audit service
 
@@ -256,7 +314,7 @@ Frontend command
   -> authentication
   -> authorization
   -> schema validation
-  -> operating mode validation
+  -> operator-mode, venue, credential, gate, and lane validation
   -> idempotency check
   -> command audit record
   -> domain validation
@@ -318,7 +376,7 @@ The risk engine is responsible for independent safety decisions. It should be de
 
 Responsibilities include:
 
-- Enforce operating mode restrictions.
+- Enforce operator-mode, venue-target, credential-scope, trading-gate, and autonomy-stage restrictions.
 - Enforce max daily loss.
 - Enforce max symbol exposure.
 - Enforce max portfolio exposure.
@@ -363,14 +421,14 @@ The execution engine is responsible for safe order translation, submission, stat
 Responsibilities include:
 
 - Validate the approved order intent is still current.
-- Confirm the operating mode and venue target.
+- Confirm the operator-mode, venue-target, credential-scope, trading-gate, and autonomy-stage tuple.
 - Translate internal order types into venue-specific requests.
 - Preserve hedge side, reduce-only flags, time-in-force, quantity, price, and client order identifiers.
 - Reject unsupported order types or unsafe translations.
 - Prevent silent conversion into taker orders.
 - Enforce maker-first defaults, post-only intent, cancel-if-crossing behavior, and explicit taker gates.
 - Include dynamic fees and expected execution costs in order previews and decision records.
-- Submit to paper exchange, Binance testnet, or future gated live venue.
+- Submit to paper exchange, internal Binance testnet validation lane, or future gated live venue.
 - Handle venue acknowledgements, rejections, fills, cancellations, expirations, and API errors.
 - Publish execution and reconciliation events.
 - Maintain idempotency for retries.
@@ -387,9 +445,13 @@ The target record format should include:
 {
   "decision_id": "generated-identifier",
   "timestamp": "iso-8601-timestamp",
-  "mode": "paper",
-  "symbol": "BTCUSDT",
-  "venue": "binance_usdm_testnet_or_paper",
+  "operator_mode": "paper",
+  "venue_target": "internal_paper",
+  "credential_scope": "none",
+  "trading_gate": "locked",
+  "autonomy_stage": "suggest_only",
+  "mlops_approval_state": "paper_approved",
+  "symbol": "BTCUSDC",
   "model_id": "registered-model-name",
   "model_version": "registered-version",
   "feature_version": "feature-set-version",
@@ -438,7 +500,7 @@ The record is not an execution approval. It is an auditable explanation of why a
 
 ## 16. Manual Trading From Frontend
 
-Manual trading begins with an operator action in the frontend. The frontend should expose clear controls for symbol, hedge side, order type, quantity, price, time-in-force, reduce-only or close intent, maker-first policy, operating mode, fee assumptions, expected edge after costs, and confirmation.
+Manual trading begins with an operator action in the frontend. The frontend should expose clear controls for symbol, hedge side, order type, quantity, price, time-in-force, reduce-only or close intent, maker-first policy, primary operator mode, internal lane/gate state, fee assumptions, expected edge after costs, and confirmation.
 
 Manual orders must still pass backend validation, risk checks, portfolio checks, execution checks, audit recording, and reconciliation. A manual action is not privileged over the risk engine.
 
@@ -467,11 +529,11 @@ The paper exchange should:
 - Emit reconciliation events like a real venue adapter.
 - Support replay tests and deterministic scenarios.
 
-Paper results should be clearly labeled and kept separate from testnet or live state.
+Paper results should be clearly labeled and kept separate from internal testnet validation and live state.
 
 ## 19. Testnet Design
 
-Testnet trading is the first external venue integration target. Binance USDⓈ-M Futures testnet should be used to validate authenticated backend signing, order translation, API error handling, rate limits, exchange filters, maker-first execution, dynamic fee assumptions, hedge-mode parameters, and reconciliation.
+The Binance testnet validation lane is the first external venue integration target. Binance USDⓈ-M Futures testnet should be used to validate authenticated backend signing, order translation, API error handling, rate limits, exchange filters, maker-first execution, dynamic fee assumptions, hedge-mode parameters, and reconciliation.
 
 Testnet credentials must be restricted, stored outside source control, and used only by backend services. The browser must never receive them.
 
@@ -481,10 +543,13 @@ Testnet behavior may differ from live behavior, so passing testnet checks is req
 
 Live trading is disabled by default.
 
-Before `live-trade` can submit an order, all of the following must be true:
+Before a live-trade workflow can submit an order, all of the following must be true:
 
 - Environment allows live operation.
-- Config sets `trading_mode` to `live-trade`.
+- Config sets `operator_mode` to `live`.
+- Config sets `venue_target` to `binance_live`.
+- Config sets `credential_scope` to `trading`.
+- Config sets `trading_gate` to an explicitly approved live-trading gate.
 - Config explicitly enables live trading.
 - Auth service confirms the operator has live-trade permission.
 - Human approval requirements are satisfied.
@@ -556,7 +621,7 @@ The MLOps flow should include:
 - Microstructure research features for order book imbalance, microprice, spread, depth, trade aggression, fill probability, adverse selection, and latency-adjusted returns.
 - Evaluation metrics stored with model artifacts.
 - Model registry entries for every candidate.
-- Approval states for research, backtest-approved, paper-approved, live-readonly-approved, and live-trade-approved.
+- Approval states for `research_candidate`, `backtest_approved`, `paper_approved`, `testnet_validated`, `live_readonly_validated`, `live_trade_candidate`, and `live_trade_approved`.
 - Model decision records for every served recommendation.
 - Explainability output suitable for frontend review.
 
@@ -617,7 +682,9 @@ For trading commands, unavailable risk, portfolio, execution, or audit dependenc
 
 The roadmap should move from safe control surfaces to increasingly realistic execution modes:
 
-1. Build the frontend control tower with observe-mode dashboards, audit views, and explicit mode indicators.
+The detailed phase-gated implementation roadmap lives in [Developer Roadmap](../roadmap/developer_roadmap.md). The summary below is intentionally shorter than that implementation plan.
+
+1. Build the frontend control tower with `PAPER` and `LIVE` primary mode indicators, audit views, lane status, and explicit gate indicators.
 2. Define shared schemas for commands, order intents, risk decisions, portfolio snapshots, model decisions, and execution events.
 3. Implement command validation, audit records, and risk veto scaffolding.
 4. Implement paper exchange workflows and replayable tests.
@@ -625,10 +692,10 @@ The roadmap should move from safe control surfaces to increasingly realistic exe
 6. Add cross-margin-aware exposure, hedge ratio, beta exposure, funding exposure, and liquidation-buffer calculations.
 7. Add model decision records and frontend review for AI-assisted recommendations.
 8. Add market microstructure research for order book imbalance, microprice, spread, depth, trade aggression, fill probability, queue approximation, adverse selection, and latency-adjusted returns.
-9. Integrate Binance USDⓈ-M Futures testnet with backend-only signing.
+9. Integrate the Binance USDⓈ-M Futures testnet validation lane with backend-only signing.
 10. Add dynamic fee policy, maker-first execution, taker leakage monitoring, reconciliation, kill switches, and operational monitoring.
 11. Add MLOps registry, training jobs, backtest jobs, and approval workflows.
-12. Add live-readonly mode with restricted read-only credentials.
-13. Consider live-trade mode only after explicit human approval, tested gates, operational runbooks, and independent risk controls are mature.
+12. Add `LIVE` read-only capability with restricted read-only credentials and `trading_gate=locked`.
+13. Consider live-trade capability only after explicit human approval, tested gates, operational runbooks, and independent risk controls are mature.
 
 The platform should remain buildable in small increments. Each step should preserve the core principle: frontend controls everything, backend validates everything, risk can veto everything, and secrets never touch the frontend.

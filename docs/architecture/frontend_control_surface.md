@@ -1,6 +1,6 @@
 # Frontend Control Surface
 
-The frontend is the primary control tower for AI-CryptoFutures-TCP. It should eventually allow the operator to control observe, paper, testnet, live-readonly, live-trade approval, training, evaluation, backtesting, strategy sessions, and model deployment without bypassing backend validation.
+The frontend is the primary control tower for AI-CryptoFutures-TCP. It should expose only `PAPER` and `LIVE` as primary operator modes while still allowing the operator to control observe-only session state, paper workflows, internal Binance testnet validation lanes, `LIVE` read-only inspection, live-trade approval, training, evaluation, backtesting, strategy sessions, and model deployment without bypassing backend validation.
 
 The frontend sends intent. Backend services validate, risk-check, portfolio-check, execute, audit, and reconcile that intent.
 
@@ -19,10 +19,10 @@ The frontend sends intent. Backend services validate, risk-check, portfolio-chec
 | Frontend screen | Operator actions | Backend command family | Required backend checks |
 | --- | --- | --- | --- |
 | Overview dashboard | Select mode, inspect venue health, inspect risk state, inspect portfolio state | `GetSystemStatus`, `GetModeStatus`, `GetRiskState`, `GetPortfolioSnapshot` | Auth, authorization, stale-state labeling |
-| Manual trading | Draft order intent, preview costs, submit paper/testnet/live-gated order, cancel order | `CreateOrderIntent`, `PreviewOrder`, `SubmitOrderIntent`, `CancelOrderIntent` | Auth, mode, schema, symbol filters, fee model, risk, portfolio, execution, audit |
-| Paper trading | Start paper session, submit paper orders, reset paper state, inspect simulated fills | `CreatePaperSession`, `SubmitPaperOrder`, `ResetPaperPortfolio`, `GetPaperReconciliation` | Auth, paper mode, risk, portfolio, paper exchange, audit |
-| Testnet trading | Enable testnet session, submit approved testnet orders, reconcile order state | `CreateTestnetSession`, `SubmitTestnetOrder`, `GetTestnetReconciliation` | Auth, testnet mode, backend-only signing, Binance filters, risk, portfolio, execution, audit |
-| Live-readonly | Inspect live balances, positions, orders, margin, liquidation estimates | `GetLiveReadonlyAccount`, `GetLiveReadonlyPositions`, `GetLiveReadonlyOrders` | Auth, live-readonly permission, read-only credentials, secrets isolation, audit |
+| Manual trading | Draft order intent, preview costs, submit paper, internal testnet, or live-gated order, cancel order | `CreateOrderIntent`, `PreviewOrder`, `SubmitOrderIntent`, `CancelOrderIntent` | Auth, mode tuple, schema, symbol filters, fee model, risk, portfolio, execution, audit |
+| Paper trading | Start paper session, submit paper orders, reset paper state, inspect simulated fills | `CreatePaperSession`, `SubmitPaperOrder`, `ResetPaperPortfolio`, `GetPaperReconciliation` | Auth, `operator_mode=paper`, risk, portfolio, paper exchange, audit |
+| Internal testnet validation | Enable Binance testnet lane, submit approved testnet orders, reconcile order state | `CreateTestnetSession`, `SubmitTestnetOrder`, `GetTestnetReconciliation` | Auth, `operator_mode=paper`, `venue_target=binance_testnet`, backend-only signing, Binance filters, risk, portfolio, execution, audit |
+| LIVE read-only | Inspect live balances, positions, orders, margin, liquidation estimates | `GetLiveReadonlyAccount`, `GetLiveReadonlyPositions`, `GetLiveReadonlyOrders` | Auth, `operator_mode=live`, `credential_scope=read_only`, `trading_gate=locked`, secrets isolation, audit |
 | Live-trade approval | Request live gate status, approve live session, approve tiny live action, halt live session | `RequestLiveApproval`, `ApproveLiveGate`, `ApproveLiveOrderIntent`, `DisableLiveTrading` | Auth, elevated permission, live gates, risk health, portfolio health, audit |
 | Training | Configure training window, launch training job, inspect metrics, compare candidates | `CreateTrainingJob`, `CancelTrainingJob`, `GetTrainingRun`, `CompareTrainingRuns` | Auth, data version, feature version, object storage, model registry, audit |
 | Evaluation | Run model evaluation, compare metrics, inspect decision quality, approve evaluation stage | `CreateEvaluationJob`, `GetEvaluationReport`, `ApproveEvaluationStage` | Auth, data windows, model registry, metrics storage, audit |

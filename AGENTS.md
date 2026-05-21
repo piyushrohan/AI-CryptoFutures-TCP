@@ -4,6 +4,8 @@ These instructions apply to all AI coding agents and human contributors working 
 
 For code review severity guidance, see [docs/code_review.md](docs/code_review.md).
 
+For implementation sequencing, follow [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). Do not skip roadmap gates to reach strategy behavior, Binance testnet validation lanes, `LIVE` read-only capability, or gated live-trade behavior faster.
+
 ## 1. Project Identity
 
 - Project: AI-CryptoFutures-TCP.
@@ -26,6 +28,7 @@ This is not a simple trading bot. The frontend is the operator control tower, th
 - Never allow a strategy or model to directly call the exchange connector.
 - Never hard-code permanent zero maker fees or assume fee promotions are permanent.
 - Never make taker behavior the default; taker behavior must be explicit, gated, tested, and audited.
+- Never expose Binance testnet, `LIVE` read-only, or live-trade capability as separate top-level frontend modes; the frontend primary modes are `PAPER` and `LIVE`.
 - Never make withdrawals available.
 - Never commit generated market data, model artifacts, checkpoints, local databases, logs, or cache output.
 - Never add realistic placeholder credentials, tokens, passwords, API keys, signing keys, or JWT secrets.
@@ -41,6 +44,10 @@ When in doubt, fail closed and keep the behavior read-only or simulated.
 - Execution engine translates approved intent into exchange-specific order payloads.
 - Audit service records every command and decision.
 - Model service produces decision records, not direct orders.
+
+Frontend mode labels are intentionally simple: `PAPER` and `LIVE`. Internal services must still track `operator_mode`, `venue_target`, `credential_scope`, `trading_gate`, `autonomy_stage`, and `mlops_approval_state`. The two-mode UI must not hide or bypass live gates, risk checks, portfolio checks, execution checks, audit, or reconciliation.
+
+MLOps approval states may indicate model or strategy readiness, but they must never bypass risk gates, live gates, portfolio checks, execution checks, audit, or reconciliation.
 
 All order intents must move through command validation, audit recording, risk checks, portfolio checks, execution checks, execution translation, submission to an approved venue or simulator, reconciliation, and frontend update.
 
@@ -73,9 +80,11 @@ Tests should prove dangerous behavior is disabled by default. Missing tests arou
 - Update risk, execution, security, MLOps, or Binance docs when changing those boundaries.
 - Update Binance constraint and fee policy docs when changing venue assumptions.
 - Update microstructure execution and research docs when changing maker-first or scalping-related assumptions.
-- Document new operating modes, live-trading gates, secret-handling expectations, and order lifecycle changes before relying on them.
+- Document operator-mode, venue-target, credential-scope, trading-gate, autonomy-stage, MLOps-state, secret-handling, and order lifecycle changes before relying on them.
 
 Documentation should describe buildable behavior, not vague intent. If a decision affects operator safety, exchange access, live-trading gates, or model governance, make it explicit.
+
+Roadmap changes must keep [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md) aligned with the Safety Spine, dynamic fee policy, frontend control surface, autonomy ladder, and live-trading gates.
 
 ## 6. Code Review Guidelines
 
