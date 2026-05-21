@@ -2,7 +2,7 @@
 
 AI-CryptoFutures-TCP is the initial skeleton for an AI crypto futures Trading Control Platform focused first on Binance USDⓈ-M Futures.
 
-TCP means Trading Control Platform. This project is intended to become a frontend-first control plane for observing markets, issuing manual trading commands, running paper and testnet workflows, managing training, evaluation, backtesting, strategy sessions, model deployment, and governing eventual live trading behind strict controls. It is not just a bot.
+TCP means Trading Control Platform. This project is intended to become a frontend-first control plane for observing markets, issuing manual trading commands, running paper workflows, running internal Binance testnet validation lanes, managing training, evaluation, backtesting, strategy sessions, model deployment, and governing eventual live trading behind strict controls. It is not just a bot.
 
 This repository currently contains guardrails, documentation, configuration placeholders, and service boundaries only. It does not contain trading strategy logic, Binance connectivity, live trading code, or real credentials.
 
@@ -19,15 +19,23 @@ The initial preferred research universe is USDC-quoted Binance USDⓈ-M Futures 
 
 Execution should be maker-first by default. Taker behavior must be explicit, gated, tested, and audited.
 
-## Operating Modes
+## Operator Mode, Venue Target, Gates, and Lanes
 
-The intended operating modes are:
+The frontend should expose only two primary operator modes:
 
-- `observe`: view-only workflows with no order placement.
-- `paper`: simulated exchange workflows using a paper exchange.
-- `testnet`: exchange testnet workflows only.
-- `live-readonly`: live account visibility without trade permission.
-- `live-trade`: live trade capability behind explicit gates.
+- `PAPER`: the first full user-facing mode, backed initially by the internal paper venue.
+- `LIVE`: introduced later, first as read-only account visibility.
+
+Internal state remains more precise than the UI label:
+
+- `operator_mode`: `paper` or `live`.
+- `venue_target`: `internal_paper`, `binance_testnet`, or `binance_live`.
+- `credential_scope`: `none`, `read_only`, or `trading`.
+- `trading_gate`: `locked`, `approval_required`, `tiny_live`, `armed`, or `halted`.
+- `autonomy_stage`: `observe_only`, `suggest_only`, `human_approval`, `paper_auto`, `testnet_auto`, `tiny_live_auto`, or `scaled_live_auto`.
+- `mlops_approval_state`: `research_candidate`, `backtest_approved`, `paper_approved`, `testnet_validated`, `live_readonly_validated`, `live_trade_candidate`, or `live_trade_approved`.
+
+Observe is an autonomy stage or session state, not a top-level operator mode. Binance testnet is an internal validation lane, not a top-level operator mode. `LIVE` read-only is `LIVE` with `credential_scope=read_only` and `trading_gate=locked`. Live-trade capability is `LIVE` with trading credentials and explicit live trading gates.
 
 Live trading is disabled by default. Any future live trading implementation must require explicit configuration gates, tests, review, and human approval.
 
@@ -50,7 +58,7 @@ Exchange secrets must remain backend-only. The frontend must never receive excha
 
 ## Developer Roadmap
 
-The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). It is phase-gated rather than date-based, with frontend control mapping first, Safety Spine before strategy, observe plus paper as the MVP, Binance testnet after paper, live-readonly before any live-trade path, and Portfolio Margin treated as later research.
+The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). It is phase-gated rather than date-based, with frontend control mapping first, Safety Spine before strategy, `PAPER` as the first full user-facing mode, Binance testnet as an internal validation lane after paper, `LIVE` introduced first with read-only credentials, and Portfolio Margin treated as later research.
 
 ## Development Status
 

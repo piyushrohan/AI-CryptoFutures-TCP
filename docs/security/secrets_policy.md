@@ -18,4 +18,4 @@ Use `.env.example` to document expected environment variable names only. Keep re
 
 ## Exchange Access
 
-Any future Binance integration must keep signing in backend infrastructure, enforce operating modes, and prove through tests that live-trading permissions are disabled by default.
+Any future Binance integration must keep signing in backend infrastructure, enforce operator-mode, venue-target, credential-scope, trading-gate, autonomy-stage, and MLOps-state constraints, and prove through tests that live-trading permissions are disabled by default.

@@ -2,7 +2,7 @@
 
 This roadmap defines the intended build order for AI-CryptoFutures-TCP. It is phase-gated, not calendar-based.
 
-The roadmap is intentionally frontend-first and safety-first. The platform should become an operator control tower for observe, paper, testnet, live-readonly, live-trade approval, training, evaluation, backtesting, strategy sessions, model deployment, panic controls, and audit inspection. It must not become an opaque trading bot.
+The roadmap is intentionally frontend-first and safety-first. The platform should become an operator control tower with only two primary user-facing modes, `PAPER` and `LIVE`, while internal lanes and gates handle observation, Binance testnet validation, live read-only visibility, live-trade approval, training, evaluation, backtesting, strategy sessions, model deployment, panic controls, and audit inspection. It must not become an opaque trading bot.
 
 This document is documentation only. It does not implement application code, Binance connector code, strategy logic, live trading, or secrets.
 
@@ -15,10 +15,29 @@ This document is documentation only. It does not implement application code, Bin
 - Live trading is disabled by default.
 - The browser never receives exchange secrets and never signs exchange requests.
 - Strategies and models never directly call the exchange connector.
-- Observe plus paper trading is the first implementation milestone.
-- Binance USDⓈ-M Futures testnet comes after stable paper workflows.
+- `PAPER` is the first full user-facing mode.
+- `LIVE` is introduced later, initially as read-only.
+- Binance USDⓈ-M Futures testnet is an internal validation lane, not a top-level operator mode.
 - The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
 - Portfolio Margin is later research after cross-margin-aware accounting matures.
+
+## Mode State Model
+
+The frontend primary mode switch should show only:
+
+- `PAPER`
+- `LIVE`
+
+Internal state must still preserve:
+
+- `operator_mode`: `paper`, `live`
+- `venue_target`: `internal_paper`, `binance_testnet`, `binance_live`
+- `credential_scope`: `none`, `read_only`, `trading`
+- `trading_gate`: `locked`, `approval_required`, `tiny_live`, `armed`, `halted`
+- `autonomy_stage`: `observe_only`, `suggest_only`, `human_approval`, `paper_auto`, `testnet_auto`, `tiny_live_auto`, `scaled_live_auto`
+- `mlops_approval_state`: `research_candidate`, `backtest_approved`, `paper_approved`, `testnet_validated`, `live_readonly_validated`, `live_trade_candidate`, `live_trade_approved`
+
+Observe is an autonomy stage or session state, not a top-level operator mode. `LIVE` read-only is `operator_mode=live`, `credential_scope=read_only`, and `trading_gate=locked`. Live-trade capability is `operator_mode=live`, `credential_scope=trading`, and explicit live trading gates.
 
 ## Recurring Gates
 
@@ -32,6 +51,7 @@ These gates apply to every phase once the related capability exists.
 - Taker behavior must be explicit, gated, tested, and audited.
 - Hedge mode is not free alpha. It is allowed only to express separable intents with independent `LONG` and `SHORT` books.
 - Risk gates, audit records, and safe config defaults must be present before execution behavior expands.
+- MLOps approval states may indicate model or strategy readiness, but they must never bypass risk gates, live gates, portfolio checks, execution checks, audit, or reconciliation.
 
 ## Phase 0: Product Contract and Frontend Control Map
 
@@ -43,7 +63,8 @@ Establish the product contract before implementation. Define the platform as a f
 
 - Product shell and navigation plan.
 - Frontend control-surface map.
-- Operator action catalog for observe, paper trading, training, evaluation, backtesting, strategy session start/stop, model deployment request, manual order intent, approval/rejection, panic cancel, panic flatten, and audit inspection.
+- Operator action catalog for `PAPER`, `LIVE`, observe-only session state, paper trading, internal testnet validation, training, evaluation, backtesting, strategy session start/stop, model deployment request, manual order intent, approval/rejection, panic cancel, panic flatten, and audit inspection.
+- Two-mode frontend map showing how each visible action maps to backend `operator_mode`, `venue_target`, `credential_scope`, `trading_gate`, `autonomy_stage`, and `mlops_approval_state`.
 
 ### Backend Capabilities Required
 
@@ -78,20 +99,20 @@ Establish the product contract before implementation. Define the platform as a f
 
 ### Purpose
 
-Build the first implementation spine around safe defaults, command validation direction, auditability, and engineering discipline. This phase prepares the observe plus paper MVP.
+Build the first implementation spine around safe defaults, command validation direction, auditability, and engineering discipline. This phase prepares `PAPER` as the first full user-facing mode with observe-only session state available inside it.
 
 ### Frontend Screens and Actions Unlocked
 
 - Local landing/control shell.
-- Observe-mode dashboard placeholder.
-- Mode status display.
+- `PAPER` dashboard placeholder.
+- Mode and gate status display.
 - Risk status placeholder.
 - Audit viewer placeholder.
 - Panic controls shown as unavailable until backend support exists.
 
 ### Backend Capabilities Required
 
-- Safe config defaults: `TRADING_MODE=observe` and `LIVE_TRADING_ENABLED=false`.
+- Safe config defaults: `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, `autonomy_stage=observe_only`, and `live_trading_enabled=false`.
 - Initial API command validation direction.
 - Audit scaffolding.
 - Risk-gate scaffolding.
@@ -101,8 +122,8 @@ Build the first implementation spine around safe defaults, command validation di
 ### Risk and Safety Gates
 
 - Live trading is disabled by default in config and tests.
-- Unsafe modes fail closed.
-- Commands that would place orders are rejected in observe mode.
+- Unsafe lanes and gates fail closed.
+- Commands that would place orders are rejected when `autonomy_stage=observe_only`.
 - Secrets are not printed, logged, committed, or sent to the frontend.
 
 ### Testing and Acceptance Gates
@@ -114,14 +135,14 @@ Build the first implementation spine around safe defaults, command validation di
 - Dependency checks.
 - Documentation checks.
 - Safe config default tests.
-- Tests proving observe mode cannot submit orders.
-- `make up` acceptance target defined: frontend, API, database, Redis, and monitoring placeholders start; observe mode is active; live trading is disabled; no Binance credentials are required.
+- Tests proving `autonomy_stage=observe_only` cannot submit orders.
+- `make up` acceptance target defined: frontend, API, database, Redis, and monitoring placeholders start; `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, and `autonomy_stage=observe_only` are active; live trading is disabled; no Binance credentials are required.
 
 ### Not Allowed Yet
 
 - Paper fills.
 - Testnet connectivity.
-- Live-readonly connectivity.
+- `LIVE` read-only connectivity.
 - Strategy sessions.
 - Model recommendations.
 
@@ -172,7 +193,7 @@ Define the exchange and account truth model before trading workflows depend on i
 
 ### Purpose
 
-Deliver the first observe plus paper MVP. Paper trading proves the frontend command path, risk checks, portfolio updates, execution translation, audit records, and reconciliation without external venue side effects.
+Deliver the first `PAPER` MVP. Paper trading proves the frontend command path, risk checks, portfolio updates, execution translation, audit records, and reconciliation without external venue side effects.
 
 ### Frontend Screens and Actions Unlocked
 
@@ -212,8 +233,8 @@ Deliver the first observe plus paper MVP. Paper trading proves the frontend comm
 
 ### Not Allowed Yet
 
-- Binance testnet order submission.
-- Live-readonly account access.
+- Binance testnet validation lane.
+- `LIVE` read-only account access.
 - Live trading.
 - Autonomous strategies.
 
@@ -262,7 +283,7 @@ Make risk and portfolio controls strong enough to support later strategy session
 
 ### Not Allowed Yet
 
-- Testnet trading without passing paper and risk gates.
+- Internal testnet validation without passing paper and risk gates.
 - Model-driven order intents.
 - Portfolio Margin trading assumptions.
 
@@ -350,7 +371,7 @@ Introduce strategy sessions only after deterministic infrastructure, paper tradi
 ### Not Allowed Yet
 
 - Testnet auto-trade.
-- Live-readonly trading.
+- `LIVE` read-only or live-trade execution.
 - AI-driven autonomous execution.
 - Direct strategy access to exchange connectors.
 
@@ -395,18 +416,18 @@ Add transparent AI/ML after deterministic infrastructure and strategy sessions e
 ### Not Allowed Yet
 
 - Live model trading.
-- Testnet auto-trade without Phase 8 gates.
+- Internal testnet auto-validation without Phase 8 gates.
 - Opaque model decisions.
 
 ## Phase 8: Binance Testnet
 
 ### Purpose
 
-Integrate Binance USDⓈ-M Futures testnet only after observe plus paper workflows are stable.
+Integrate the Binance USDⓈ-M Futures testnet validation lane only after `PAPER` workflows are stable.
 
 ### Frontend Screens and Actions Unlocked
 
-- Testnet trading dashboard.
+- Internal testnet validation dashboard.
 - Testnet account-state view.
 - Testnet order lifecycle view.
 - User data stream reconciliation status.
@@ -430,6 +451,7 @@ Integrate Binance USDⓈ-M Futures testnet only after observe plus paper workflo
 - Testnet credentials are separate from live credentials.
 - Browser never receives credentials or signs exchange requests.
 - Testnet order intents pass the same validation, risk, portfolio, execution, audit, and reconciliation flow as paper orders.
+- Testnet remains an internal validation lane, not a top-level operator mode.
 - Live trading remains disabled.
 
 ### Testing and Acceptance Gates
@@ -443,20 +465,20 @@ Integrate Binance USDⓈ-M Futures testnet only after observe plus paper workflo
 
 ### Not Allowed Yet
 
-- Live-readonly account access.
+- `LIVE` read-only account access.
 - Live-trade order submission.
 - Portfolio Margin trading.
 - Scaled autonomy.
 
-## Phase 9: Live-readonly Account Visibility
+## Phase 9: LIVE Read-only Account Visibility
 
 ### Purpose
 
-Add live account visibility without any live order submission.
+Add `LIVE` read-only account visibility without any live order submission.
 
 ### Frontend Screens and Actions Unlocked
 
-- Live-readonly dashboard.
+- `LIVE` read-only dashboard.
 - Live balance view.
 - Live position view.
 - Live open-order view.
@@ -469,19 +491,19 @@ Add live account visibility without any live order submission.
 - Backend-only secret access.
 - Live account snapshot ingestion.
 - Reconciliation comparison against internal state.
-- Live-readonly audit records.
+- `LIVE` read-only audit records.
 
 ### Risk and Safety Gates
 
-- No order submission in live-readonly mode.
+- No order submission when `operator_mode=live`, `credential_scope=read_only`, and `trading_gate=locked`.
 - Read-only and trading credentials are separate.
 - Withdrawals are never enabled.
 - Secrets never reach the browser.
-- Live-readonly cannot silently upgrade to live-trade.
+- `LIVE` read-only cannot silently upgrade to live-trade.
 
 ### Testing and Acceptance Gates
 
-- Tests proving live-readonly rejects order submission.
+- Tests proving `LIVE` read-only rejects order submission.
 - Secret isolation tests.
 - Permission tests.
 - Reconciliation comparison tests.
@@ -497,7 +519,7 @@ Add live account visibility without any live order submission.
 
 ### Purpose
 
-Document and eventually test a tiny live-trade research path. This phase is fundamentally different from live-readonly and must remain gated.
+Document and eventually test a tiny live-trade research path. This phase is fundamentally different from `LIVE` read-only and must remain gated.
 
 ### Frontend Screens and Actions Unlocked
 
@@ -526,7 +548,7 @@ Document and eventually test a tiny live-trade research path. This phase is fund
 - Maker-only by default.
 - Taker behavior explicitly gated.
 - Strict daily loss cap.
-- Live-trading config gate explicitly enabled.
+- Live-trading config gate explicitly enabled with `operator_mode=live`, `venue_target=binance_live`, `credential_scope=trading`, and an approved `trading_gate`.
 - Risk, portfolio, execution, audit, and notification services healthy.
 - Automatic halt on stale data, API errors, abnormal spread, funding spike, volatility halt, reconciliation drift, or taker leakage breach.
 
@@ -571,11 +593,11 @@ The roadmap is satisfied when:
 
 - This file is linked from `README.md`, `AGENTS.md`, and `docs/architecture/system_design.md`.
 - Phases 0 through 10 are present.
-- Live-readonly is separate from live-trade research.
+- `LIVE` read-only is separate from live-trade research.
 - Frontend control-surface mapping comes before implementation.
 - Safety Spine is first.
-- Observe plus paper is the MVP.
-- Binance testnet comes after paper.
+- `PAPER` is the first full user-facing mode.
+- Binance testnet is an internal validation lane after paper.
 - Portfolio Margin is later research.
 - Live trading is disabled by default.
 - Browser secrets and browser signing are forbidden.

@@ -83,11 +83,15 @@ Confirm secrets are not committed, printed, logged, sent to the frontend, embedd
 
 Restricted API keys, IP allowlisting, separate read-only and trading keys, and disabled withdrawals should remain core assumptions for future exchange access.
 
-### Operating Modes and Live Gates
+### Operator Modes, Internal Lanes, and Live Gates
 
-Confirm `observe`, `paper`, `testnet`, `live-readonly`, and `live-trade` behavior remains explicit. Live trading must be disabled by default and unavailable unless every required gate is deliberately enabled.
+Confirm the frontend exposes only `PAPER` and `LIVE` as primary operator modes. `observe_only` is an autonomy stage or session state, Binance testnet is an internal validation lane, `LIVE` read-only is `operator_mode=live` with `credential_scope=read_only` and `trading_gate=locked`, and live-trade capability is `operator_mode=live` with trading credentials and explicit live gates.
 
-Changes that affect mode handling need tests for safe defaults and rejection paths.
+The two-mode UI must not hide or bypass live gates, MLOps approval state, risk checks, portfolio checks, execution checks, audit, or reconciliation. Live trading must be disabled by default and unavailable unless every required gate is deliberately enabled.
+
+MLOps approval state must never be treated as execution authorization. Reviewers should reject any path where model or strategy readiness bypasses risk gates, live gates, portfolio checks, execution checks, audit, or reconciliation.
+
+Changes that affect `operator_mode`, `venue_target`, `credential_scope`, `trading_gate`, `autonomy_stage`, or `mlops_approval_state` need tests for safe defaults and rejection paths.
 
 ### Risk Independence
 
