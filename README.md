@@ -15,7 +15,7 @@ This repository currently contains guardrails, documentation, configuration plac
 
 Every future order intent must pass through command validation, audit recording, risk checks, portfolio checks, execution checks, and reconciliation before it is reflected back to the frontend.
 
-The initial preferred research universe is USDC-quoted Binance USDⓈ-M perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, when maker-fee economics are favorable after dynamic fees, spread, fill probability, adverse selection, funding, and latency costs are included. Fee assumptions must be configurable and audited; permanent zero maker fees must not be hard-coded.
+The initial preferred research universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy. Fee assumptions must be configurable and audited; permanent zero maker fees must not be hard-coded.
 
 Execution should be maker-first by default. Taker behavior must be explicit, gated, tested, and audited.
 

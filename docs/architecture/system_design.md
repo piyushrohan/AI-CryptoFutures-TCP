@@ -4,6 +4,8 @@
 
 AI-CryptoFutures-TCP is a private, frontend-first Trading Control Platform for AI-assisted crypto futures operations. The first target venue is Binance USDⓈ-M Futures, with paper trading and Binance testnet workflows preceding any live capability.
 
+The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
+
 The platform mission is to give an operator a control tower for market observation, manual order intent creation, model decision review, paper execution, testnet execution, portfolio supervision, risk enforcement, auditability, training, evaluation, backtesting, strategy sessions, model deployment, and future gated live trading.
 
 This is not a simple bot. The system is designed as a governed trading platform where the frontend is the primary human control surface, backend services validate all commands, independent risk controls can veto any action, and exchange secrets remain isolated from the browser.
@@ -34,7 +36,7 @@ Paper trading should model fills, fees, mark prices, funding assumptions, order 
 
 ### testnet
 
-`testnet` mode routes approved order intents to Binance USDⓈ-M futures testnet through backend-only signing and venue adapters. It validates exchange integration, order translation, reconciliation, and operational workflows before live access is considered.
+`testnet` mode routes approved order intents to Binance USDⓈ-M Futures testnet through backend-only signing and venue adapters. It validates exchange integration, order translation, reconciliation, and operational workflows before live access is considered.
 
 Testnet mode still requires command validation, audit records, risk checks, portfolio checks, and execution checks.
 
@@ -175,7 +177,7 @@ Backtests are approval inputs, not live-trading authorization.
 
 The paper exchange simulates venue behavior for approved paper orders. It owns simulated order acceptance, rejection, fills, cancellations, fees, funding assumptions, balances, positions, and reconciliation events.
 
-It should be close enough to Binance USDⓈ-M futures behavior to test workflows while remaining clearly separate from real exchange connectivity.
+It should be close enough to Binance USDⓈ-M Futures behavior to test workflows while remaining clearly separate from real exchange connectivity.
 
 ### audit service
 

@@ -8,7 +8,7 @@ Local development should converge on a one-command startup that brings up the fr
 make up
 ```
 
-`make up` is the intended primary command for starting the local platform once implementation exists. It should start the frontend, backend API, local infrastructure, and development observability dependencies needed for the operator to use the frontend as the main control surface.
+`make up` is the intended primary command for starting the local platform once implementation exists. It should start the frontend, backend API, database, Redis, and monitoring placeholders needed for the operator to use the frontend as the main control surface.
 
 ## Startup Defaults
 
@@ -18,6 +18,7 @@ Local startup must default to:
 - `TRADING_MODE=observe`.
 - `LIVE_TRADING_ENABLED=false`.
 - No live exchange submission.
+- No Binance credentials required.
 - No browser access to exchange secrets.
 - No frontend exchange signing.
 - No strategy or model direct access to exchange connectors.
@@ -38,9 +39,23 @@ The local stack should eventually include:
 - API gateway.
 - Postgres.
 - Redis.
-- Prometheus.
-- Grafana.
+- Prometheus placeholder.
+- Grafana placeholder.
 - Optional local workers for paper exchange, training, evaluation, and backtesting.
+
+## Acceptance Target
+
+The first useful `make up` implementation should prove:
+
+- Frontend starts.
+- API starts.
+- Database starts.
+- Redis starts.
+- Monitoring placeholders start.
+- Observe mode is active.
+- Live trading is disabled.
+- No Binance credentials are required.
+- The frontend is the main control surface after startup.
 
 The initial repository may contain placeholders. The target behavior is a predictable local environment that starts safely and makes unsafe modes visibly unavailable.
 

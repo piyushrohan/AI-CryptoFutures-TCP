@@ -17,6 +17,7 @@ This document is documentation only. It does not implement application code, Bin
 - Strategies and models never directly call the exchange connector.
 - Observe plus paper trading is the first implementation milestone.
 - Binance USDⓈ-M Futures testnet comes after stable paper workflows.
+- The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
 - Portfolio Margin is later research after cross-margin-aware accounting matures.
 
 ## Recurring Gates
@@ -50,6 +51,7 @@ Establish the product contract before implementation. Define the platform as a f
 - Command ownership boundaries.
 - Initial service boundary map.
 - Documentation links from contributor guidance to architecture, risk, execution, Binance, and roadmap docs.
+- Preferred initial USDC-quoted universe documented as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee and liquidity policy.
 
 ### Risk and Safety Gates
 
@@ -113,6 +115,7 @@ Build the first implementation spine around safe defaults, command validation di
 - Documentation checks.
 - Safe config default tests.
 - Tests proving observe mode cannot submit orders.
+- `make up` acceptance target defined: frontend, API, database, Redis, and monitoring placeholders start; observe mode is active; live trading is disabled; no Binance credentials are required.
 
 ### Not Allowed Yet
 
@@ -140,6 +143,7 @@ Define the exchange and account truth model before trading workflows depend on i
 - `AccountState` schema covering margin mode, position mode, collateral assets, maintenance margin, liquidation distance, unrealized PnL, funding exposure, open orders, symbol filters, tick size, lot size, min notional, and fee policy references.
 - Dynamic symbol metadata model.
 - Dynamic fee and symbol policy model.
+- Preferred USDC-quoted Binance USDⓈ-M Futures universe metadata for pairs such as `BTCUSDC` and `ETHUSDC`, gated by current dynamic fee and liquidity policy.
 - Exchange-state snapshot storage.
 - Staleness and source timestamps.
 
