@@ -2,9 +2,9 @@
 # with live trading disabled and no Binance credentials required.
 services:
   web:
-    image: node:22-alpine
+    image: python:3.12-slim
     working_dir: /workspace
-    command: ["sh", "-c", "echo 'web placeholder: apps/web' && sleep infinity"]
+    command: ["python", "-m", "http.server", "3000", "--directory", "apps/web"]
     volumes:
       - .:/workspace
     ports:

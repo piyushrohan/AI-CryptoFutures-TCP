@@ -35,7 +35,7 @@ Internal state remains more precise than the UI label:
 - `autonomy_stage`: `observe_only`, `suggest_only`, `human_approval`, `paper_auto`, `testnet_auto`, `tiny_live_auto`, or `scaled_live_auto`.
 - `mlops_approval_state`: `research_candidate`, `backtest_approved`, `paper_approved`, `testnet_validated`, `live_readonly_validated`, `live_trade_candidate`, or `live_trade_approved`.
 
-Observe is an autonomy stage or session state, not a top-level operator mode. Binance testnet is an internal validation lane, not a top-level operator mode. `LIVE` read-only is `LIVE` with `credential_scope=read_only` and `trading_gate=locked`. Live-trade capability is `LIVE` with trading credentials and explicit live trading gates.
+Observe is an autonomy stage or session state, not a top-level operator mode. Binance testnet is an internal validation lane, not a top-level operator mode. `LIVE` read-only is `LIVE` with `credential_scope=read_only` and `trading_gate=locked`. Live-trade capability is `LIVE` with trading credentials, explicit live trading gates, a live autonomy stage, and `mlops_approval_state=live_trade_approved`.
 
 Live trading is disabled by default. Any future live trading implementation must require explicit configuration gates, tests, review, and human approval.
 
@@ -62,8 +62,19 @@ The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](do
 
 ## Local Bootstrap
 
-Use `make up` to start the local development stack. It is intended to start the frontend placeholder, API, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, and live trading disabled. Binance credentials are not required for local bootstrap.
+Use `make up` to start the local development stack. It starts a static frontend control shell at `http://localhost:3000`, an API bootstrap at `http://localhost:8080`, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, `autonomy_stage=observe_only`, and live trading disabled. Binance credentials are not required for local bootstrap.
+
+The Phase 1 API exposes read-only safety endpoints plus command validation only:
+
+- `GET /health`
+- `GET /status`
+- `GET /control-surface`
+- `GET /risk/status`
+- `GET /audit/records`
+- `POST /commands/validate`
+
+`POST /commands/validate` records an audit decision and performs no execution. Trading-affecting commands are rejected in `observe_only`, strategy/session commands require a future current fee model, and live trading remains fail-closed.
 
 ## Development Status
 
-This is a professional repository skeleton. Implementation code will be added incrementally only after the relevant control, risk, testing, and documentation expectations are clear.
+Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Paper fills, Binance connectivity, strategy sessions, model recommendations, and live trading are not implemented.

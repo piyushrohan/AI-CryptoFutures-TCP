@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI-CryptoFutures-TCP</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Trading Control Platform</p>
+        <h1>AI-CryptoFutures-TCP</h1>
+      </div>
+      <div class="mode-switch" aria-label="Operator mode">
+        <button class="mode active" type="button">PAPER</button>
+        <button class="mode locked" type="button" disabled>LIVE</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel status-panel" aria-labelledby="status-title">
+        <div class="panel-heading">
+          <h2 id="status-title">Mode And Gates</h2>
+          <span id="api-state" class="pill">loading</span>
+        </div>
+        <dl class="status-grid">
+          <div>
+            <dt>Operator mode</dt>
+            <dd id="operator-mode">paper</dd>
+          </div>
+          <div>
+            <dt>Venue target</dt>
+            <dd id="venue-target">internal_paper</dd>
+          </div>
+          <div>
+            <dt>Credential scope</dt>
+            <dd id="credential-scope">none</dd>
+          </div>
+          <div>
+            <dt>Trading gate</dt>
+            <dd id="trading-gate">locked</dd>
+          </div>
+          <div>
+            <dt>Autonomy stage</dt>
+            <dd id="autonomy-stage">observe_only</dd>
+          </div>
+          <div>
+            <dt>Live trading</dt>
+            <dd id="live-trading">disabled</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="risk-title">
+        <div class="panel-heading">
+          <h2 id="risk-title">Risk Status</h2>
+          <span id="risk-state" class="pill locked">fail closed</span>
+        </div>
+        <ul id="risk-guardrails" class="compact-list">
+          <li>Live trading disabled by default</li>
+          <li>Observe-only rejects trading commands</li>
+          <li>Risk engine can veto every command</li>
+        </ul>
+      </section>
+
+      <section class="panel wide" aria-labelledby="commands-title">
+        <div class="panel-heading">
+          <h2 id="commands-title">Control Surface Map</h2>
+          <span class="pill">Phase 0 contract</span>
+        </div>
+        <div id="command-list" class="command-list" aria-live="polite"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="panic-title">
+        <div class="panel-heading">
+          <h2 id="panic-title">Panic Controls</h2>
+          <span class="pill locked">unavailable</span>
+        </div>
+        <div class="panic-actions">
+          <button type="button" disabled>Halt New Intents</button>
+          <button type="button" disabled>Panic Cancel</button>
+          <button type="button" disabled>Panic Flatten</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="audit-title">
+        <div class="panel-heading">
+          <h2 id="audit-title">Audit Viewer</h2>
+          <span id="audit-count" class="pill">0 records</span>
+        </div>
+        <div id="audit-records" class="empty-state">No command decisions yet.</div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
