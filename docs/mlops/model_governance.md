@@ -12,7 +12,9 @@ Models must be governed as deployable artifacts with traceable data, features, e
 - Human approval before live deployment: live use requires explicit human approval and configuration gates.
 - Model decision records: model outputs must be recorded with inputs, feature versions, model version, timestamp, confidence, and resulting action or non-action.
 - Explainability requirement: model-assisted decisions must be explainable enough for operators to understand why a recommendation or command was produced.
+- Expected-edge requirement: model-assisted decisions must include dynamic fee assumptions and expected edge after costs when recommending a trading action or no-trade decision.
+- Microstructure research: scalping models should support features such as order book imbalance, microprice, spread, depth, trade aggression, fill probability, adverse selection, and latency-adjusted returns.
 
 ## Deployment Posture
 
-No model should be able to bypass command validation, risk checks, portfolio checks, execution checks, or live-trading gates.
+No model should be able to bypass command validation, risk checks, portfolio checks, execution checks, or live-trading gates. Models and strategies must never directly call the exchange connector.

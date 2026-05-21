@@ -1,53 +1,104 @@
-# AI Agent Instructions
+# Contributor Instructions
 
-This repository is for AI-CryptoFutures-TCP, a Trading Control Platform for crypto futures workflows. Future coding agents must preserve the safety boundaries in this file.
+These instructions apply to all AI coding agents and human contributors working in this repository. Treat this file as a safety contract for changes to AI-CryptoFutures-TCP.
 
-## Non-Negotiable Rules
+For code review severity guidance, see [docs/code_review.md](docs/code_review.md).
 
-- Never add real secrets, credentials, API keys, tokens, passwords, signing keys, or realistic placeholder secrets.
-- Never bypass the risk engine.
-- Never let the frontend directly sign exchange requests.
-- Never implement live trading without explicit config gates and tests proving those gates default to disabled.
-- Never silently introduce taker orders.
+## 1. Project Identity
+
+- Project: AI-CryptoFutures-TCP.
+- TCP: Trading Control Platform.
+- Product direction: frontend-first AI crypto futures trading control platform.
+
+This is not a simple trading bot. The frontend is the operator control tower, the backend is the enforcement boundary, and every future trading action must remain auditable, risk-checked, and mode-gated.
+
+## 2. Non-negotiable Safety Rules
+
+- Never commit secrets.
+- Never print secrets.
+- Never store Binance secrets in frontend code.
+- Never let browser code sign exchange requests.
+- Never bypass risk checks.
+- Never enable live trading by default.
+- Never add market/taker order behavior silently.
+- Never assume hedge mode is per-symbol only; represent hedge-mode state with explicit independent `LONG` and `SHORT` books where position behavior depends on side.
+- Never create endpoints that place live orders without explicit live-trading gates.
+- Never allow a strategy or model to directly call the exchange connector.
+- Never hard-code permanent zero maker fees or assume fee promotions are permanent.
+- Never make taker behavior the default; taker behavior must be explicit, gated, tested, and audited.
 - Never make withdrawals available.
 - Never commit generated market data, model artifacts, checkpoints, local databases, logs, or cache output.
+- Never add realistic placeholder credentials, tokens, passwords, API keys, signing keys, or JWT secrets.
 
-## Order Intent Pipeline
+When in doubt, fail closed and keep the behavior read-only or simulated.
 
-All order intents must go through:
+## 3. Architecture Rules
 
-1. Command validation.
-2. Audit recording.
-3. Risk checks.
-4. Portfolio checks.
-5. Execution checks.
-6. Execution translation.
-7. Exchange or paper-exchange submission.
-8. Reconciliation.
-9. Frontend update.
+- Frontend sends intent.
+- API validates commands.
+- Risk engine approves or rejects.
+- Portfolio engine checks exposure and margin.
+- Execution engine translates approved intent into exchange-specific order payloads.
+- Audit service records every command and decision.
+- Model service produces decision records, not direct orders.
 
-Do not skip stages for convenience. If a feature cannot use this path yet, keep it read-only or simulated.
+All order intents must move through command validation, audit recording, risk checks, portfolio checks, execution checks, execution translation, submission to an approved venue or simulator, reconciliation, and frontend update.
 
-## Hedge Mode
+Strategies and models may propose actions, but their output is untrusted until backend validation, independent risk approval, portfolio approval, and execution approval have completed.
 
-Hedge mode must represent independent `LONG` and `SHORT` books. Do not collapse long and short exposure into one net position when behavior depends on side-specific liquidation, margin, realized PnL, unrealized PnL, or reduce-only handling.
+Binance-specific implementation must follow [docs/binance/binance_usdm_constraints.md](docs/binance/binance_usdm_constraints.md) and [docs/binance/fee_and_symbol_policy.md](docs/binance/fee_and_symbol_policy.md). Execution work must also follow [docs/execution/maker_microstructure_execution.md](docs/execution/maker_microstructure_execution.md).
 
-## Live Trading Gates
+## 4. Testing Rules
 
-Live trading must remain disabled by default. Any future live-trading code must require explicit environment and configuration gates, mode checks, risk approval, portfolio approval, execution approval, audit records, and tests.
-
-## Testing Expectations
-
-- Always write tests for risk and execution behavior.
-- Add regression tests for rejected commands, vetoes, mode gates, stale data handling, and hedge-mode behavior.
-- Prefer deterministic tests over network-dependent tests.
+- Add tests for risk logic.
+- Add tests for execution translation.
+- Add tests for hedge-mode behavior.
+- Add tests for live-trading gates.
+- Add tests for config defaults.
+- Add tests for dynamic fee assumptions and expected-edge calculations.
+- Add tests for maker-first execution and taker leakage gates.
+- Prefer deterministic tests.
+- Make sure to get over 98% test coverage for implemented code.
 - Do not connect to Binance in unit tests.
+- Add regression tests for rejected commands, vetoes, stale data handling, panic controls, and unsafe mode transitions.
 
-## Engineering Discipline
+Tests should prove dangerous behavior is disabled by default. Missing tests around risk, execution, hedge mode, and live gates should block changes that touch those areas.
 
-- Prefer small, reviewable commits.
-- Update docs when changing architecture.
-- Add TODO markers only when they are specific and actionable.
-- Keep changes scoped to the requested behavior.
-- Make configuration explicit and boring.
-- Do not add trading strategy logic unless the task explicitly asks for it.
+## 5. Documentation Rules
+
+- Update docs when architecture changes.
+- Update README when commands change.
+- Explain assumptions.
+- Keep decision records understandable.
+- Update risk, execution, security, MLOps, or Binance docs when changing those boundaries.
+- Update Binance constraint and fee policy docs when changing venue assumptions.
+- Update microstructure execution and research docs when changing maker-first or scalping-related assumptions.
+- Document new operating modes, live-trading gates, secret-handling expectations, and order lifecycle changes before relying on them.
+
+Documentation should describe buildable behavior, not vague intent. If a decision affects operator safety, exchange access, live-trading gates, or model governance, make it explicit.
+
+## 6. Code Review Guidelines
+
+- Flag any secret-handling weakness as P0.
+- Flag any live-trading bypass as P0.
+- Flag any frontend exchange-signing path as P0.
+- Flag missing risk tests as P1.
+- Flag unclear trading behavior as P1.
+- Flag undocumented architecture changes as P1.
+
+Use [docs/code_review.md](docs/code_review.md) for the full review checklist and severity definitions.
+
+## 7. Implementation Style
+
+- Small, reviewable changes.
+- Strong typing.
+- Clear boundaries.
+- No hidden side effects.
+- No silent defaults for dangerous behavior.
+- Prefer explicit config over magic behavior.
+- Prefer mode-gated, auditable workflows over implicit execution paths.
+- Keep trading strategy logic separate from risk, portfolio, and execution enforcement.
+- Keep commits focused and explain why safety-relevant behavior changed.
+- Add TODO markers only when they are specific, actionable, and tied to a clear owner or follow-up.
+
+Implementation should make unsafe behavior hard to express. If a change touches trading intent, secrets, risk, execution, portfolio accounting, or model-driven decisions, design the interfaces so validation and review are unavoidable.
