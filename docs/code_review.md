@@ -16,6 +16,9 @@ Every review should ask:
 - Can frontend code sign exchange requests or call authenticated exchange endpoints directly?
 - Can a strategy or model call the exchange connector directly?
 - Can this change silently create market orders, taker behavior, or unsafe defaults?
+- Can this change hard-code fees, assume permanent zero maker fees, or skip expected-edge-after-costs calculations?
+- Can this change leak maker-first intent into taker fills without explicit gates and audit records?
+- Can this change weaken microstructure execution checks such as post-only intent, cancel-if-crossing, queue approximation, fill probability, or adverse-selection handling?
 - Does hedge-mode behavior preserve independent `LONG` and `SHORT` books?
 - Are risk, execution, config default, and live-gate tests present where needed?
 - Are architecture or operator-facing behavior changes documented?
@@ -37,6 +40,7 @@ Flag as P0:
 - Any withdrawal-related capability.
 - Any default that enables live trading.
 - Any risk-engine bypass for trading commands.
+- Any strategy or model path that directly calls the exchange connector.
 
 ### P1: Must Fix Before Merge Unless Explicitly Deferred
 
@@ -52,6 +56,10 @@ Flag as P1:
 - Unclear trading behavior.
 - Undocumented architecture changes.
 - Silent introduction of market orders, taker behavior, or order aggressiveness changes.
+- Static or undocumented fee assumptions in trading, backtest, paper, model, or execution decisions.
+- Missing expected-edge-after-costs calculation where a decision depends on edge.
+- Missing maker/taker leakage tests for changed execution behavior.
+- Unclear post-only, cancel-if-crossing, fill-probability, queue, adverse-selection, or latency behavior.
 - Portfolio exposure or margin logic that does not support future multi-symbol management.
 - Model decision output that is not explainable or auditable.
 
@@ -99,11 +107,17 @@ Execution code should translate approved intent into venue-specific payloads wit
 
 Any market/taker behavior must be explicit, reviewed, documented, tested, and gated where appropriate.
 
+Maker-first behavior should be the default. Reviewers should check post-only intent, cancel-if-crossing policy, max taker leakage, queue position approximation, fill probability, adverse-selection assumptions, latency handling, spread capture measurement, and cancel/replace discipline.
+
+Fee assumptions must be dynamic, configurable, audited, and included in expected-edge calculations. Reviewers should reject permanent hard-coded zero maker fees and any change that treats a fee promotion as permanent.
+
 ### Model Decisions
 
 Model service changes should produce decision records, not direct orders. Decision records must be explainable and auditable, including model version, feature version, input window, confidence, recommendation, and rationale.
 
 AI-assisted orders must enter the same validation, risk, portfolio, execution, audit, and reconciliation lifecycle as manual orders.
+
+Microstructure models should include no-trade decisions and should report expected edge after fees, spread, slippage, adverse selection, funding, and latency costs when those features affect the recommendation.
 
 ### Tests and Coverage
 
@@ -111,8 +125,12 @@ Risk, execution, hedge-mode, live-gate, and config-default changes require deter
 
 Avoid tests that require live Binance connectivity. Unit tests must not call Binance.
 
+Execution tests should cover maker-first defaults, post-only translation, cancel-if-crossing behavior, taker leakage gates, dynamic fee assumptions, and expected-edge-after-costs calculations.
+
 ### Documentation
 
 Architecture changes should update the relevant docs under `docs/`. Command changes should update `README.md`. Safety-sensitive assumptions should be stated plainly.
 
 Docs should remain practical and buildable, with clear boundaries between frontend control, backend validation, risk veto authority, portfolio checks, execution translation, model decision records, and exchange connectivity.
+
+Binance-specific implementation should be checked against `docs/binance/binance_usdm_constraints.md` and `docs/binance/fee_and_symbol_policy.md`. Maker-first execution should be checked against `docs/execution/maker_microstructure_execution.md`.

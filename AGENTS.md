@@ -24,6 +24,8 @@ This is not a simple trading bot. The frontend is the operator control tower, th
 - Never assume hedge mode is per-symbol only; represent hedge-mode state with explicit independent `LONG` and `SHORT` books where position behavior depends on side.
 - Never create endpoints that place live orders without explicit live-trading gates.
 - Never allow a strategy or model to directly call the exchange connector.
+- Never hard-code permanent zero maker fees or assume fee promotions are permanent.
+- Never make taker behavior the default; taker behavior must be explicit, gated, tested, and audited.
 - Never make withdrawals available.
 - Never commit generated market data, model artifacts, checkpoints, local databases, logs, or cache output.
 - Never add realistic placeholder credentials, tokens, passwords, API keys, signing keys, or JWT secrets.
@@ -44,6 +46,8 @@ All order intents must move through command validation, audit recording, risk ch
 
 Strategies and models may propose actions, but their output is untrusted until backend validation, independent risk approval, portfolio approval, and execution approval have completed.
 
+Binance-specific implementation must follow [docs/binance/binance_usdm_constraints.md](docs/binance/binance_usdm_constraints.md) and [docs/binance/fee_and_symbol_policy.md](docs/binance/fee_and_symbol_policy.md). Execution work must also follow [docs/execution/maker_microstructure_execution.md](docs/execution/maker_microstructure_execution.md).
+
 ## 4. Testing Rules
 
 - Add tests for risk logic.
@@ -51,6 +55,8 @@ Strategies and models may propose actions, but their output is untrusted until b
 - Add tests for hedge-mode behavior.
 - Add tests for live-trading gates.
 - Add tests for config defaults.
+- Add tests for dynamic fee assumptions and expected-edge calculations.
+- Add tests for maker-first execution and taker leakage gates.
 - Prefer deterministic tests.
 - Make sure to get over 98% test coverage for implemented code.
 - Do not connect to Binance in unit tests.
@@ -65,6 +71,8 @@ Tests should prove dangerous behavior is disabled by default. Missing tests arou
 - Explain assumptions.
 - Keep decision records understandable.
 - Update risk, execution, security, MLOps, or Binance docs when changing those boundaries.
+- Update Binance constraint and fee policy docs when changing venue assumptions.
+- Update microstructure execution and research docs when changing maker-first or scalping-related assumptions.
 - Document new operating modes, live-trading gates, secret-handling expectations, and order lifecycle changes before relying on them.
 
 Documentation should describe buildable behavior, not vague intent. If a decision affects operator safety, exchange access, live-trading gates, or model governance, make it explicit.
