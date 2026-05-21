@@ -53,6 +53,8 @@ All order intents must move through command validation, audit recording, risk ch
 
 Strategies and models may propose actions, but their output is untrusted until backend validation, independent risk approval, portfolio approval, and execution approval have completed.
 
+Frontend operator actions must be represented in the code-owned command catalog under `libs/schemas/commands.py`. Add or change catalog entries before building UI flows or backend handlers, and keep the catalog aligned with [docs/architecture/frontend_control_surface.md](docs/architecture/frontend_control_surface.md).
+
 Binance-specific implementation must follow [docs/binance/binance_usdm_constraints.md](docs/binance/binance_usdm_constraints.md) and [docs/binance/fee_and_symbol_policy.md](docs/binance/fee_and_symbol_policy.md). Execution work must also follow [docs/execution/maker_microstructure_execution.md](docs/execution/maker_microstructure_execution.md).
 
 ## 4. Testing Rules
