@@ -1,0 +1,12 @@
+app_env: dev
+trading_mode: observe
+live_trading_enabled: false
+binance_env: testnet
+
+risk:
+  enabled: true
+  default_action: veto
+
+execution:
+  enabled: false
+  exchange_submission_enabled: false

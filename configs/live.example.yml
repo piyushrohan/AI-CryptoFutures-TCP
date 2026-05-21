@@ -1,0 +1,14 @@
+app_env: live
+trading_mode: live-readonly
+live_trading_enabled: false
+binance_env: live
+
+risk:
+  enabled: true
+  default_action: veto
+
+execution:
+  enabled: false
+  venue: binance_live
+  exchange_submission_enabled: false
+  requires_explicit_human_approval: true

@@ -1,0 +1,13 @@
+app_env: paper
+trading_mode: paper
+live_trading_enabled: false
+binance_env: testnet
+
+risk:
+  enabled: true
+  default_action: veto
+
+execution:
+  enabled: true
+  venue: paper_exchange
+  exchange_submission_enabled: false

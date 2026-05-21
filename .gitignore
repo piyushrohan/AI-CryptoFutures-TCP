@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node and frontend builds
+node_modules/
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+
+# Environment files and local secrets
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.gpg
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+redis-data/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Model artifacts, MLflow, and checkpoints
+models/
+model_artifacts/
+artifacts/
+mlruns/
+mlartifacts/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.joblib
+
+# Downloaded market data and research outputs
+data/
+datasets/
+downloads/
+research/data/
+research/outputs/
+
+# Caches
+.cache/
+.ipynb_checkpoints/
+.parcel-cache/
+.vite/
+
+# Docker local overrides
+docker-compose.override.yml
+docker-compose.*.local.yml
+infra/docker/local/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
