@@ -4,6 +4,8 @@ These instructions apply to all AI coding agents and human contributors working 
 
 For code review severity guidance, see [docs/code_review.md](docs/code_review.md).
 
+For implementation sequencing, follow [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). Do not skip roadmap gates to reach strategy, testnet, live-readonly, or live-trade behavior faster.
+
 ## 1. Project Identity
 
 - Project: AI-CryptoFutures-TCP.
@@ -76,6 +78,8 @@ Tests should prove dangerous behavior is disabled by default. Missing tests arou
 - Document new operating modes, live-trading gates, secret-handling expectations, and order lifecycle changes before relying on them.
 
 Documentation should describe buildable behavior, not vague intent. If a decision affects operator safety, exchange access, live-trading gates, or model governance, make it explicit.
+
+Roadmap changes must keep [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md) aligned with the Safety Spine, dynamic fee policy, frontend control surface, autonomy ladder, and live-trading gates.
 
 ## 6. Code Review Guidelines
 

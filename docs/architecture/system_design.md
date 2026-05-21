@@ -95,6 +95,7 @@ Related design documents:
 - [Margin and Exposure Model](../portfolio/margin_and_exposure_model.md) defines future portfolio accounting.
 - [Microstructure Research Plan](../mlops/microstructure_research_plan.md) defines scalping feature and target research.
 - [Autonomy Ladder](../risk/autonomy_ladder.md) defines staged autonomy approval gates.
+- [Developer Roadmap](../roadmap/developer_roadmap.md) defines phase-gated implementation order.
 
 ## 6. Service Boundaries
 
@@ -616,6 +617,8 @@ For trading commands, unavailable risk, portfolio, execution, or audit dependenc
 ## 26. Future Roadmap
 
 The roadmap should move from safe control surfaces to increasingly realistic execution modes:
+
+The detailed phase-gated implementation roadmap lives in [Developer Roadmap](../roadmap/developer_roadmap.md). The summary below is intentionally shorter than that implementation plan.
 
 1. Build the frontend control tower with observe-mode dashboards, audit views, and explicit mode indicators.
 2. Define shared schemas for commands, order intents, risk decisions, portfolio snapshots, model decisions, and execution events.

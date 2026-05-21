@@ -48,6 +48,10 @@ Exchange secrets must remain backend-only. The frontend must never receive excha
 - `tests/`: unit, integration, replay, risk, and execution test suites.
 - `infra/`: local Docker, Prometheus, and Grafana scaffolding.
 
+## Developer Roadmap
+
+The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). It is phase-gated rather than date-based, with frontend control mapping first, Safety Spine before strategy, observe plus paper as the MVP, Binance testnet after paper, live-readonly before any live-trade path, and Portfolio Margin treated as later research.
+
 ## Development Status
 
 This is a professional repository skeleton. Implementation code will be added incrementally only after the relevant control, risk, testing, and documentation expectations are clear.
