@@ -550,6 +550,8 @@ Before a live-trade workflow can submit an order, all of the following must be t
 - Config sets `venue_target` to `binance_live`.
 - Config sets `credential_scope` to `trading`.
 - Config sets `trading_gate` to an explicitly approved live-trading gate.
+- Config sets `autonomy_stage` to a live-trading autonomy stage appropriate for the gate.
+- Config sets `mlops_approval_state` to `live_trade_approved`.
 - Config explicitly enables live trading.
 - Auth service confirms the operator has live-trade permission.
 - Human approval requirements are satisfied.

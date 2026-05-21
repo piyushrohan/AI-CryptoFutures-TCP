@@ -1,7 +1,13 @@
 import unittest
 
-from apps.api.server import health_payload, status_payload
+from apps.api.server import (
+    audit_payload,
+    health_payload,
+    status_payload,
+    validate_command_payload,
+)
 from libs.config import RuntimeConfig
+from services.audit import InMemoryAuditRecorder
 
 
 class ApiStatusTests(unittest.TestCase):
@@ -30,6 +36,30 @@ class ApiStatusTests(unittest.TestCase):
         self.assertEqual(placeholders["database"], "expected")
         self.assertEqual(placeholders["redis"], "expected")
         self.assertEqual(placeholders["monitoring"], "expected")
+
+    def test_command_validation_rejects_order_in_observe_only_and_audits(self):
+        recorder = InMemoryAuditRecorder()
+
+        payload = validate_command_payload(
+            {"command_type": "create_manual_order_intent", "payload": {"symbol": "BTCUSDC"}},
+            config=RuntimeConfig(),
+            recorder=recorder,
+        )
+
+        self.assertEqual(payload["status"], "ok")
+        self.assertFalse(payload["command"]["accepted"])
+        self.assertEqual(payload["command"]["decision"], "vetoed")
+        self.assertEqual(payload["execution"], "not_performed")
+        self.assertEqual(len(recorder.records()), 1)
+
+    def test_audit_payload_is_read_only(self):
+        recorder = InMemoryAuditRecorder()
+
+        payload = audit_payload(recorder)
+
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["service"], "audit")
+        self.assertEqual(payload["records"], [])
 
 
 if __name__ == "__main__":

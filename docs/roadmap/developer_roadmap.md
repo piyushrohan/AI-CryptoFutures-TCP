@@ -548,7 +548,7 @@ Document and eventually test a tiny live-trade research path. This phase is fund
 - Maker-only by default.
 - Taker behavior explicitly gated.
 - Strict daily loss cap.
-- Live-trading config gate explicitly enabled with `operator_mode=live`, `venue_target=binance_live`, `credential_scope=trading`, and an approved `trading_gate`.
+- Live-trading config gate explicitly enabled with `operator_mode=live`, `venue_target=binance_live`, `credential_scope=trading`, an approved `trading_gate`, a live-trading `autonomy_stage`, and `mlops_approval_state=live_trade_approved`.
 - Risk, portfolio, execution, audit, and notification services healthy.
 - Automatic halt on stale data, API errors, abnormal spread, funding spike, volatility halt, reconciliation drift, or taker leakage breach.
 

@@ -140,12 +140,21 @@ class RuntimeConfig:
 
     @property
     def trading_allowed(self) -> bool:
+        live_autonomy_allowed = (
+            self.trading_gate == TradingGate.TINY_LIVE
+            and self.autonomy_stage == AutonomyStage.TINY_LIVE_AUTO
+        ) or (
+            self.trading_gate == TradingGate.ARMED
+            and self.autonomy_stage == AutonomyStage.SCALED_LIVE_AUTO
+        )
         return (
             self.live_trading_enabled
             and self.operator_mode == OperatorMode.LIVE
             and self.venue_target == VenueTarget.BINANCE_LIVE
             and self.credential_scope == CredentialScope.TRADING
             and self.trading_gate in {TradingGate.TINY_LIVE, TradingGate.ARMED}
+            and live_autonomy_allowed
+            and self.mlops_approval_state == MLOpsApprovalState.LIVE_TRADE_APPROVED
         )
 
     def validation_errors(self) -> list[str]:
@@ -160,8 +169,13 @@ class RuntimeConfig:
             errors.append("binance_live requires operator_mode=live")
         if self.live_trading_enabled and not self.trading_allowed:
             errors.append("live trading enabled without the full live trading gate tuple")
-        if self.trading_gate == TradingGate.ARMED and not self.live_trading_enabled:
-            errors.append("trading_gate=armed requires live_trading_enabled=true")
+        if self.trading_gate in {
+            TradingGate.TINY_LIVE,
+            TradingGate.ARMED,
+        } and not self.live_trading_enabled:
+            errors.append(
+                "live trading gates require live_trading_enabled=true"
+            )
         return errors
 
     @property

@@ -45,6 +45,8 @@ class RuntimeConfigTests(unittest.TestCase):
                 "VENUE_TARGET": "binance_live",
                 "CREDENTIAL_SCOPE": "trading",
                 "TRADING_GATE": "tiny_live",
+                "AUTONOMY_STAGE": "tiny_live_auto",
+                "MLOPS_APPROVAL_STATE": "live_trade_approved",
                 "LIVE_TRADING_ENABLED": "true",
             }
         )
@@ -66,6 +68,25 @@ class RuntimeConfigTests(unittest.TestCase):
         self.assertFalse(config.live_trading_enabled)
         self.assertFalse(config.trading_allowed)
         self.assertTrue(config.fail_closed)
+
+    def test_live_trading_requires_autonomy_and_mlops_approval(self):
+        config = load_runtime_config(
+            {
+                "OPERATOR_MODE": "live",
+                "VENUE_TARGET": "binance_live",
+                "CREDENTIAL_SCOPE": "trading",
+                "TRADING_GATE": "tiny_live",
+                "LIVE_TRADING_ENABLED": "true",
+            }
+        )
+
+        self.assertEqual(config.autonomy_stage, AutonomyStage.OBSERVE_ONLY)
+        self.assertFalse(config.trading_allowed)
+        self.assertTrue(config.fail_closed)
+        self.assertIn(
+            "live trading enabled without the full live trading gate tuple",
+            config.validation_errors(),
+        )
 
     def test_invalid_enum_value_is_rejected(self):
         with self.assertRaises(ConfigError):
