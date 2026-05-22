@@ -33,6 +33,8 @@ from libs.schemas import (
     now_utc,
 )
 from services.portfolio import apply_paper_fill, portfolio_payload
+from services.execution import validate_maker_first_intent
+from services.risk import PaperRiskResult, PaperRiskState, evaluate_paper_order_risk
 
 
 PAPER_SOURCE = "local_paper_simulator"
@@ -44,11 +46,15 @@ class PaperSubmitResult:
     preview: PaperOrderPreview
     order: PaperOrder | None
     reconciliation_event: ReconciliationEvent
+    risk_result: PaperRiskResult | None = None
 
     def to_public_dict(self) -> dict[str, object]:
         return {
             "accepted": self.accepted,
             "preview": self.preview.to_public_dict(),
+            "risk": (
+                self.risk_result.to_public_dict() if self.risk_result else None
+            ),
             "order": self.order.to_public_dict() if self.order else None,
             "reconciliation_event": self.reconciliation_event.to_public_dict(),
             "execution": "paper_only",
@@ -161,6 +167,7 @@ class InMemoryPaperExchange:
         self._orders: list[PaperOrder] = []
         self._reconciliation_events: list[ReconciliationEvent] = []
         self._taker_gate_enabled = taker_gate_enabled
+        self._risk_state = PaperRiskState()
         self._halted = False
 
     def account_state(self) -> AccountState:
@@ -259,16 +266,12 @@ class InMemoryPaperExchange:
 
         if intent.order_type.value != "LIMIT":
             reasons.append("paper exchange only supports limit order intents")
-        if intent.time_in_force != TimeInForce.GTX:
-            reasons.append("maker-first paper orders must use GTX time-in-force")
-        if not intent.post_only:
-            reasons.append("maker-first paper orders must be post_only")
-        if intent.allow_taker and not self._taker_gate_enabled:
-            reasons.append("taker behavior is not enabled for paper exchange")
-
-        post_only_would_cross = _would_cross(intent, quote)
-        if intent.post_only and post_only_would_cross:
-            reasons.append("post-only order would cross the paper book")
+        execution_check = validate_maker_first_intent(
+            intent,
+            quote,
+            taker_gate_enabled=self._taker_gate_enabled,
+        )
+        reasons.extend(execution_check.reasons)
 
         expected_edge = calculate_expected_edge(intent, fee_policy, quote)
         if expected_edge.expected_edge_after_costs <= 0:
@@ -279,7 +282,7 @@ class InMemoryPaperExchange:
             accepted=not reasons,
             reasons=tuple(reasons),
             maker_first=True,
-            post_only_would_cross=post_only_would_cross,
+            post_only_would_cross=execution_check.post_only_would_cross,
             expected_edge=expected_edge,
         )
 
@@ -302,6 +305,28 @@ class InMemoryPaperExchange:
             )
             self._reconciliation_events.append(event)
             return PaperSubmitResult(False, preview, None, event)
+
+        quote = self.quote_for_symbol(intent.symbol, now)
+        if quote is None:
+            raise RuntimeError("accepted preview cannot have missing quote")
+        risk_result = evaluate_paper_order_risk(
+            self._account_state,
+            intent,
+            preview,
+            quote,
+            state=self._risk_state,
+            reference_time=now,
+        )
+        if not risk_result.accepted:
+            event = ReconciliationEvent(
+                event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
+                order_id=order_id,
+                status=ReconciliationStatus.REJECTED,
+                reason="; ".join(risk_result.reasons),
+                created_at=now,
+            )
+            self._reconciliation_events.append(event)
+            return PaperSubmitResult(False, preview, None, event, risk_result)
 
         fill_fee = preview.expected_edge.maker_fee
         fill = PaperFill(
@@ -334,7 +359,7 @@ class InMemoryPaperExchange:
             created_at=now,
         )
         self._reconciliation_events.append(event)
-        return PaperSubmitResult(True, preview, order, event)
+        return PaperSubmitResult(True, preview, order, event, risk_result)
 
     def cancel_order(self, order_id: str) -> dict[str, object]:
         for order in self._orders:
