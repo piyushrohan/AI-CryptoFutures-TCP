@@ -14,6 +14,7 @@ from services.market_data.replay import (
     SyntheticEthBtcSnapshot,
     derive_synthetic_ethbtc,
     generate_microstructure_features,
+    load_replay_file,
     replay_payload,
     synthetic_market_depth_fixtures,
 )
@@ -29,6 +30,7 @@ __all__ = [
     "exchange_state_payload",
     "fee_policy_payload",
     "generate_microstructure_features",
+    "load_replay_file",
     "replay_payload",
     "symbol_metadata_payload",
     "synthetic_market_depth_fixtures",

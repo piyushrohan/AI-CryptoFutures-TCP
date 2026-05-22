@@ -22,6 +22,7 @@ from services.market_data import (
     account_state_payload,
     exchange_state_payload,
     fee_policy_payload,
+    load_replay_file,
     replay_payload,
     symbol_metadata_payload,
 )
@@ -224,6 +225,13 @@ def strategy_start_payload(
     }
 
 
+def backtest_run_payload(body: dict[str, Any] | None = None) -> dict[str, Any]:
+    payload = body or {}
+    replay_file = payload.get("replay_file")
+    snapshots = load_replay_file(str(replay_file)) if replay_file else None
+    return backtest_report_payload(snapshots)
+
+
 def strategy_pause_payload(
     body: dict[str, Any] | None = None,
     *,
@@ -386,6 +394,9 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/strategy/sessions/start":
             self._handle_json_payload(strategy_start_payload)
+            return
+        if self.path == "/backtests/run":
+            self._handle_json_payload(backtest_run_payload)
             return
         if self.path == "/strategy/sessions/pause":
             self._handle_json_payload(strategy_pause_payload)

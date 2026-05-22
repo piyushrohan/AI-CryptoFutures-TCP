@@ -1,12 +1,20 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
-from services.backtesting import backtest_report_payload, run_microstructure_backtest
+from services.backtesting import (
+    backtest_report_payload,
+    persist_backtest_report,
+    run_microstructure_backtest,
+)
 from services.market_data import (
     derive_synthetic_ethbtc,
     generate_microstructure_features,
+    load_replay_file,
     replay_payload,
     synthetic_market_depth_fixtures,
 )
+from services.storage import JsonStateStore
 from services.strategy import StrategySessionManager
 
 
@@ -48,6 +56,36 @@ class ResearchBacktestStrategyTests(unittest.TestCase):
         self.assertEqual(report.maker_taker_ratio, 1)
         self.assertIn("expected_edge_after_costs", payload["report"])
         self.assertEqual(payload["report"]["approval_state"], "research_only")
+
+    def test_local_csv_replay_file_can_drive_backtest(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp, "replay.csv")
+            path.write_text(
+                "\n".join(
+                    [
+                        "symbol,timestamp,receive_timestamp,bid,ask,bid_size,ask_size,buy_trade_qty,sell_trade_qty,funding_rate_bps,open_interest,liquidation_notional,latency_ms",
+                        "BTCUSDC,2026-01-01T12:00:00+00:00,2026-01-01T12:00:00.010000+00:00,65000,65000.5,4,3,1,0.5,0.8,100,0,10",
+                        "ETHUSDC,2026-01-01T12:00:00+00:00,2026-01-01T12:00:00.011000+00:00,3200,3200.05,80,75,10,5,0.6,200,0,11",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            snapshots = load_replay_file(path)
+            report = run_microstructure_backtest(snapshots)
+
+            self.assertEqual(len(snapshots), 2)
+            self.assertEqual(report.fixture_source, "local_replay_file")
+            self.assertEqual(report.observation_count, 2)
+
+    def test_backtest_report_can_persist_locally(self):
+        with TemporaryDirectory() as tmp:
+            report = run_microstructure_backtest()
+
+            persist_backtest_report(report, JsonStateStore(tmp))
+
+            self.assertTrue(Path(tmp, "backtests", "latest_report.json").exists())
+            self.assertTrue(Path(tmp, "backtests", "reports.jsonl").exists())
 
     def test_strategy_session_defaults_to_no_trade(self):
         manager = StrategySessionManager()
