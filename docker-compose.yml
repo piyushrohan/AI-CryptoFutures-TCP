@@ -1,10 +1,10 @@
-# Development-only compose scaffold.
-# Services are placeholders until application code and Dockerfiles exist.
+# Development-only compose scaffold. Startup defaults to PAPER/internal_paper
+# with live trading disabled and no Binance credentials required.
 services:
   web:
-    image: node:22-alpine
+    image: python:3.12-slim
     working_dir: /workspace
-    command: ["sh", "-c", "echo 'web placeholder: apps/web' && sleep infinity"]
+    command: ["python", "-m", "http.server", "3000", "--directory", "apps/web"]
     volumes:
       - .:/workspace
     ports:
@@ -15,13 +15,20 @@ services:
   api:
     image: python:3.12-slim
     working_dir: /workspace
-    command: ["sh", "-c", "echo 'api placeholder: apps/api' && sleep infinity"]
+    command: ["python", "-m", "apps.api.server"]
     volumes:
       - .:/workspace
     environment:
       APP_ENV: dev
-      TRADING_MODE: observe
+      OPERATOR_MODE: paper
+      VENUE_TARGET: internal_paper
+      CREDENTIAL_SCOPE: none
+      TRADING_GATE: locked
+      AUTONOMY_STAGE: observe_only
+      MLOPS_APPROVAL_STATE: research_candidate
       LIVE_TRADING_ENABLED: "false"
+      SECRETS_BACKEND: local_dev_only
+      API_PORT: "8080"
     ports:
       - "8080:8080"
     depends_on:

@@ -1,5 +1,10 @@
 app_env: dev
-trading_mode: observe
+operator_mode: paper
+venue_target: internal_paper
+credential_scope: none
+trading_gate: locked
+autonomy_stage: observe_only
+mlops_approval_state: research_candidate
 live_trading_enabled: false
 binance_env: testnet
 

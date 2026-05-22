@@ -18,7 +18,7 @@ This document is documentation only. It does not implement application code, Bin
 - `PAPER` is the first full user-facing mode.
 - `LIVE` is introduced later, initially as read-only.
 - Binance USDⓈ-M Futures testnet is an internal validation lane, not a top-level operator mode.
-- The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
+- The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy. The first BTC/ETH focus treats `SYN_ETHBTC` as a derived non-executable series and direct `ETHBTC` as disabled reference-only data.
 - Portfolio Margin is later research after cross-margin-aware accounting matures.
 
 ## Mode State Model
@@ -165,6 +165,7 @@ Define the exchange and account truth model before trading workflows depend on i
 - Dynamic symbol metadata model.
 - Dynamic fee and symbol policy model.
 - Preferred USDC-quoted Binance USDⓈ-M Futures universe metadata for pairs such as `BTCUSDC` and `ETHUSDC`, gated by current dynamic fee and liquidity policy.
+- Three-asset symbol-universe policy: `BTCUSDC` and `ETHUSDC` executable, `SYN_ETHBTC` derived and non-executable, `ETHBTC` reference-only and disabled by default.
 - Exchange-state snapshot storage.
 - Staleness and source timestamps.
 
@@ -310,6 +311,7 @@ Build deterministic research infrastructure before AI models. This phase support
 - Backtest engine.
 - Fee model and slippage model integration.
 - Feature generation for imbalance, microprice, spread, depth slope, queue imbalance, trade sign imbalance, short-term realized volatility, funding rate, open interest, liquidation prints, BTC dominance proxy, cross-coin correlation, and latency-adjusted mid-price returns.
+- Synthetic ETH/BTC feature generation from time-aligned `ETHUSDC` and `BTCUSDC` books, including leg timestamp skew and synthetic spread cost.
 
 ### Risk and Safety Gates
 
@@ -548,7 +550,7 @@ Document and eventually test a tiny live-trade research path. This phase is fund
 - Maker-only by default.
 - Taker behavior explicitly gated.
 - Strict daily loss cap.
-- Live-trading config gate explicitly enabled with `operator_mode=live`, `venue_target=binance_live`, `credential_scope=trading`, and an approved `trading_gate`.
+- Live-trading config gate explicitly enabled with `operator_mode=live`, `venue_target=binance_live`, `credential_scope=trading`, an approved `trading_gate`, a live-trading `autonomy_stage`, and `mlops_approval_state=live_trade_approved`.
 - Risk, portfolio, execution, audit, and notification services healthy.
 - Automatic halt on stale data, API errors, abnormal spread, funding spike, volatility halt, reconciliation drift, or taker leakage breach.
 

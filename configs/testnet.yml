@@ -1,5 +1,10 @@
 app_env: testnet
-trading_mode: testnet
+operator_mode: paper
+venue_target: binance_testnet
+credential_scope: trading
+trading_gate: locked
+autonomy_stage: testnet_auto
+mlops_approval_state: testnet_validated
 live_trading_enabled: false
 binance_env: testnet
 

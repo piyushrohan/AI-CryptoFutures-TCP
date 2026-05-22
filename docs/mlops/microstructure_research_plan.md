@@ -4,6 +4,8 @@ AI-CryptoFutures-TCP should support market microstructure research for short-hor
 
 This plan defines research features and targets. It does not implement strategy code.
 
+The first BTC/ETH relative-value research path should use `BTCUSDC` and `ETHUSDC` as executable instruments and compute `SYN_ETHBTC = ETHUSDC / BTCUSDC` as a derived, non-executable series. Direct `ETHBTC` is reference-only and disabled by default unless a future policy change promotes it.
+
 ## Research Objectives
 
 The research stack should help answer:
@@ -52,6 +54,20 @@ Potential features:
 - Depth at best bid and ask.
 - Depth within configured basis-point bands.
 - Spread regime classification.
+
+### Synthetic ETH/BTC
+
+Synthetic ETH/BTC features should be computed from time-aligned `ETHUSDC` and `BTCUSDC` books.
+
+Potential features:
+
+- `SYN_ETHBTC` mid, bid, ask, and spread.
+- Direct-vs-synthetic basis when direct `ETHBTC` reference data is enabled.
+- Leg timestamp skew.
+- Leg staleness flags.
+- ETH beta to BTC.
+- Synthetic spread cost.
+- Funding differential between executable legs.
 
 ### Trade Aggression
 

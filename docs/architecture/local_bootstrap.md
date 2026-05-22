@@ -8,7 +8,7 @@ Local development should converge on a one-command startup that brings up the fr
 make up
 ```
 
-`make up` is the intended primary command for starting the local platform once implementation exists. It should start the frontend, backend API, database, Redis, and monitoring placeholders needed for the operator to use the frontend as the main control surface.
+`make up` is the intended primary command for starting the local platform. The Phase 1 implementation starts a static frontend control shell, backend API, database, Redis, and monitoring placeholders needed for the operator to use the frontend as the main control surface.
 
 ## Startup Defaults
 
@@ -34,6 +34,8 @@ Observe mode should allow inspection, mocked or local state, documentation-linke
 After startup, the frontend should be the main entry point. Developers and operators should be able to inspect system health, operator mode, venue target, gate state, risk state, portfolio state, market data readiness, audit history, and available workflows from the browser.
 
 Command-line tools may support development and maintenance, but they should not become the primary trading control path.
+
+Phase 1 exposes the frontend at `http://localhost:3000` and the API at `http://localhost:8080`. The frontend displays mode/gate status, risk guardrails, the code-owned control-surface catalog, audit records, and disabled panic controls.
 
 ## Expected Local Services
 

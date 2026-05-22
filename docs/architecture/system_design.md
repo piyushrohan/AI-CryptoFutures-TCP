@@ -6,6 +6,8 @@ AI-CryptoFutures-TCP is a private, frontend-first Trading Control Platform for A
 
 The preferred initial strategy universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy.
 
+The initial BTC/ETH relative-value design treats `BTCUSDC` and `ETHUSDC` as the only executable instruments, `SYN_ETHBTC` as a derived non-executable series, and direct `ETHBTC` as disabled reference-only data unless a future policy explicitly promotes it.
+
 The platform mission is to give an operator a control tower for market observation, manual order intent creation, model decision review, paper execution, testnet execution, portfolio supervision, risk enforcement, auditability, training, evaluation, backtesting, strategy sessions, model deployment, and future gated live trading.
 
 This is not a simple bot. The system is designed as a governed trading platform where the frontend is the primary human control surface, backend services validate all commands, independent risk controls can veto any action, and exchange secrets remain isolated from the browser.
@@ -148,6 +150,7 @@ Related design documents:
 - [Local Bootstrap](local_bootstrap.md) defines the intended `make up` startup path and safe defaults.
 - [Binance USDⓈ-M Constraints](../binance/binance_usdm_constraints.md) captures Binance-specific venue assumptions.
 - [Fee and Symbol Policy](../binance/fee_and_symbol_policy.md) defines USDC-quoted pair preference and dynamic fee requirements.
+- [Three-Asset BTC/ETH Universe](../market_data/three_asset_universe.md) defines the initial executable, derived, and reference symbol roles.
 - [Maker Microstructure Execution](../execution/maker_microstructure_execution.md) defines maker-first execution behavior.
 - [Margin and Exposure Model](../portfolio/margin_and_exposure_model.md) defines future portfolio accounting.
 - [Microstructure Research Plan](../mlops/microstructure_research_plan.md) defines scalping feature and target research.
@@ -550,6 +553,8 @@ Before a live-trade workflow can submit an order, all of the following must be t
 - Config sets `venue_target` to `binance_live`.
 - Config sets `credential_scope` to `trading`.
 - Config sets `trading_gate` to an explicitly approved live-trading gate.
+- Config sets `autonomy_stage` to a live-trading autonomy stage appropriate for the gate.
+- Config sets `mlops_approval_state` to `live_trade_approved`.
 - Config explicitly enables live trading.
 - Auth service confirms the operator has live-trade permission.
 - Human approval requirements are satisfied.

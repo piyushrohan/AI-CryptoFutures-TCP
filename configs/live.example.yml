@@ -1,5 +1,10 @@
 app_env: live
-trading_mode: live-readonly
+operator_mode: live
+venue_target: binance_live
+credential_scope: read_only
+trading_gate: locked
+autonomy_stage: observe_only
+mlops_approval_state: live_readonly_validated
 live_trading_enabled: false
 binance_env: live
 

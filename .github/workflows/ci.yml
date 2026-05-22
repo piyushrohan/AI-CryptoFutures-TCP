@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  safety-spine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Syntax checks
+        run: python -m compileall -q apps libs services tests
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests/unit
+
+      - name: Compose config check
+        run: docker compose config >/dev/null
+
+      - name: Documentation path checks
+        run: |
+          test -f README.md
+          test -f AGENTS.md
+          test -f docs/roadmap/developer_roadmap.md
+          test -f docs/architecture/frontend_control_surface.md
+          test -f docs/architecture/system_design.md
+          test -f docs/market_data/three_asset_universe.md
+          test -f docs/code_review.md
+          test -f configs/symbol_universe.yml
+
+      - name: Secret pattern scan
+        run: |
+          # Baseline guardrail: fail the build if common token/key formats are committed.
+          # This complements review discipline; it is not a replacement for managed secret scanning.
+          ! git grep -n -E '(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' -- . ':!*.pyc'

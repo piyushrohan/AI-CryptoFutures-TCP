@@ -19,6 +19,7 @@ Every review should ask:
 - Can this change hard-code fees, assume permanent zero maker fees, or skip expected-edge-after-costs calculations?
 - Can this change leak maker-first intent into taker fills without explicit gates and audit records?
 - Can this change weaken microstructure execution checks such as post-only intent, cancel-if-crossing, queue approximation, fill probability, or adverse-selection handling?
+- Can this change make `ETHBTC` or `SYN_ETHBTC` executable without an explicit symbol-universe policy change?
 - Does hedge-mode behavior preserve independent `LONG` and `SHORT` books?
 - Are risk, execution, config default, and live-gate tests present where needed?
 - Are architecture or operator-facing behavior changes documented?
@@ -57,6 +58,8 @@ Flag as P1:
 - Undocumented architecture changes.
 - Silent introduction of market orders, taker behavior, or order aggressiveness changes.
 - Static or undocumented fee assumptions in trading, backtest, paper, model, or execution decisions.
+- Treating direct `ETHBTC` as executable or full-depth required before the BTCUSDC/ETHUSDC synthetic path is approved.
+- Treating `SYN_ETHBTC` as a venue symbol rather than a derived non-executable series.
 - Missing expected-edge-after-costs calculation where a decision depends on edge.
 - Missing maker/taker leakage tests for changed execution behavior.
 - Unclear post-only, cancel-if-crossing, fill-probability, queue, adverse-selection, or latency behavior.
@@ -114,6 +117,8 @@ Any market/taker behavior must be explicit, reviewed, documented, tested, and ga
 Maker-first behavior should be the default. Reviewers should check post-only intent, cancel-if-crossing policy, max taker leakage, queue position approximation, fill probability, adverse-selection assumptions, latency handling, spread capture measurement, and cancel/replace discipline.
 
 Fee assumptions must be dynamic, configurable, audited, and included in expected-edge calculations. Reviewers should reject permanent hard-coded zero maker fees and any change that treats a fee promotion as permanent.
+
+For the initial BTC/ETH focus, reviewers should confirm that `BTCUSDC` and `ETHUSDC` are the only executable instruments, `SYN_ETHBTC` remains derived and non-executable, and direct `ETHBTC` remains disabled reference-only data unless a reviewed policy change says otherwise.
 
 ### Model Decisions
 
