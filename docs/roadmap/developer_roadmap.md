@@ -6,6 +6,9 @@ The roadmap is intentionally frontend-first and safety-first. The platform shoul
 
 This document is documentation only. It does not implement application code, Binance connector code, strategy logic, live trading, or secrets.
 
+Implementation status for the deterministic local MVP of phases 3 through 6 is
+tracked in [Phase 3-6 Implementation Status](phase_3_6_implementation_status.md).
+
 ## Roadmap Principles
 
 - Frontend controls everything.
