@@ -18,7 +18,7 @@ The frontend sends intent. Backend services validate, risk-check, portfolio-chec
 
 | Frontend screen | Operator actions | Backend command family | Required backend checks |
 | --- | --- | --- | --- |
-| Overview dashboard | Select mode, inspect venue health, inspect risk state, inspect portfolio state | `GetSystemStatus`, `GetModeStatus`, `GetRiskState`, `GetPortfolioSnapshot` | Auth, authorization, stale-state labeling |
+| Overview dashboard | Select mode, inspect venue health, inspect risk state, inspect portfolio state, inspect symbol-universe policy | `GetSystemStatus`, `GetModeStatus`, `GetRiskState`, `GetPortfolioSnapshot`, `GetSymbolUniverse` | Auth, authorization, stale-state labeling |
 | Manual trading | Draft order intent, preview costs, submit paper, internal testnet, or live-gated order, cancel order | `CreateOrderIntent`, `PreviewOrder`, `SubmitOrderIntent`, `CancelOrderIntent` | Auth, mode tuple, schema, symbol filters, fee model, risk, portfolio, execution, audit |
 | Paper trading | Start paper session, submit paper orders, reset paper state, inspect simulated fills | `CreatePaperSession`, `SubmitPaperOrder`, `ResetPaperPortfolio`, `GetPaperReconciliation` | Auth, `operator_mode=paper`, risk, portfolio, paper exchange, audit |
 | Internal testnet validation | Enable Binance testnet lane, submit approved testnet orders, reconcile order state | `CreateTestnetSession`, `SubmitTestnetOrder`, `GetTestnetReconciliation` | Auth, `operator_mode=paper`, `venue_target=binance_testnet`, backend-only signing, Binance filters, risk, portfolio, execution, audit |

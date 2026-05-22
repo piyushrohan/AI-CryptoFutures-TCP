@@ -32,7 +32,9 @@ docs-check:
 	@test -f docs/roadmap/developer_roadmap.md
 	@test -f docs/architecture/frontend_control_surface.md
 	@test -f docs/architecture/system_design.md
+	@test -f docs/market_data/three_asset_universe.md
 	@test -f docs/code_review.md
+	@test -f configs/symbol_universe.yml
 
 secret-scan:
 	@! git grep -n -E '(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' -- . ':!*.pyc'

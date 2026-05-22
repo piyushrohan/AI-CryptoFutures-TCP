@@ -34,7 +34,9 @@ jobs:
           test -f docs/roadmap/developer_roadmap.md
           test -f docs/architecture/frontend_control_surface.md
           test -f docs/architecture/system_design.md
+          test -f docs/market_data/three_asset_universe.md
           test -f docs/code_review.md
+          test -f configs/symbol_universe.yml
 
       - name: Secret pattern scan
         run: |

@@ -28,6 +28,7 @@ This is not a simple trading bot. The frontend is the operator control tower, th
 - Never allow a strategy or model to directly call the exchange connector.
 - Never hard-code permanent zero maker fees or assume fee promotions are permanent.
 - Never make taker behavior the default; taker behavior must be explicit, gated, tested, and audited.
+- Never make `ETHBTC` or `SYN_ETHBTC` executable without an explicit symbol-universe policy change, tests, and review.
 - Never expose Binance testnet, `LIVE` read-only, or live-trade capability as separate top-level frontend modes; the frontend primary modes are `PAPER` and `LIVE`.
 - Never make withdrawals available.
 - Never commit generated market data, model artifacts, checkpoints, local databases, logs, or cache output.
@@ -54,6 +55,8 @@ All order intents must move through command validation, audit recording, risk ch
 Strategies and models may propose actions, but their output is untrusted until backend validation, independent risk approval, portfolio approval, and execution approval have completed.
 
 Frontend operator actions must be represented in the code-owned command catalog under `libs/schemas/commands.py`. Add or change catalog entries before building UI flows or backend handlers, and keep the catalog aligned with [docs/architecture/frontend_control_surface.md](docs/architecture/frontend_control_surface.md).
+
+Symbol-universe behavior must follow [docs/market_data/three_asset_universe.md](docs/market_data/three_asset_universe.md), `configs/symbol_universe.yml`, and `libs/schemas/symbol_universe.py`. The initial executable set is `BTCUSDC` and `ETHUSDC`; `SYN_ETHBTC` is derived and direct `ETHBTC` is disabled reference-only data by default.
 
 Binance-specific implementation must follow [docs/binance/binance_usdm_constraints.md](docs/binance/binance_usdm_constraints.md) and [docs/binance/fee_and_symbol_policy.md](docs/binance/fee_and_symbol_policy.md). Execution work must also follow [docs/execution/maker_microstructure_execution.md](docs/execution/maker_microstructure_execution.md).
 

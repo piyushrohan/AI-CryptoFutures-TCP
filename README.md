@@ -17,6 +17,8 @@ Every future order intent must pass through command validation, audit recording,
 
 The initial preferred research universe is USDC-quoted Binance USDⓈ-M Futures perpetual pairs, such as `BTCUSDC` and `ETHUSDC`, subject to current dynamic fee, liquidity, funding, and risk policy. Fee assumptions must be configurable and audited; permanent zero maker fees must not be hard-coded.
 
+The first BTC/ETH focus treats `BTCUSDC` and `ETHUSDC` as executable instruments, `SYN_ETHBTC` as a derived non-executable series, and direct `ETHBTC` as disabled reference-only data unless a future policy explicitly promotes it.
+
 Execution should be maker-first by default. Taker behavior must be explicit, gated, tested, and audited.
 
 ## Operator Mode, Venue Target, Gates, and Lanes
@@ -69,6 +71,7 @@ The Phase 1 API exposes read-only safety endpoints plus command validation only:
 - `GET /health`
 - `GET /status`
 - `GET /control-surface`
+- `GET /symbol-universe`
 - `GET /risk/status`
 - `GET /audit/records`
 - `POST /commands/validate`

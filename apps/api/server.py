@@ -9,7 +9,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from libs.config import RuntimeConfig, load_runtime_config
-from libs.schemas import CommandRequest, control_surface_payload
+from libs.schemas import CommandRequest, control_surface_payload, symbol_universe_payload
 from services.audit import InMemoryAuditRecorder
 from services.risk import evaluate_command, risk_status_payload
 
@@ -88,6 +88,9 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/control-surface":
             self._send_json(HTTPStatus.OK, control_surface_payload())
             return
+        if self.path == "/symbol-universe":
+            self._send_json(HTTPStatus.OK, symbol_universe_payload())
+            return
         if self.path == "/risk/status":
             self._send_json(HTTPStatus.OK, risk_status_payload(load_runtime_config()))
             return
@@ -102,6 +105,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     "/health",
                     "/status",
                     "/control-surface",
+                    "/symbol-universe",
                     "/risk/status",
                     "/audit/records",
                 ],

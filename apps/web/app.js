@@ -62,6 +62,28 @@ const renderCommands = (payload) => {
   }
 };
 
+const renderUniverse = (payload) => {
+  const list = document.getElementById("universe-list");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = "";
+  for (const instrument of payload.instruments || []) {
+    const item = document.createElement("article");
+    item.className = "command-item";
+    const title = document.createElement("strong");
+    title.textContent = instrument.symbol;
+    const meta = document.createElement("span");
+    meta.textContent = `${instrument.role} -> ${instrument.data_recording_level}`;
+    const gate = document.createElement("span");
+    gate.textContent = instrument.execution_enabled
+      ? "execution candidate"
+      : "not executable";
+    item.append(title, meta, gate);
+    list.appendChild(item);
+  }
+};
+
 const renderAudit = (payload) => {
   const records = payload.records || [];
   setText("audit-count", `${records.length} records`);
@@ -81,15 +103,17 @@ const renderAudit = (payload) => {
 
 const boot = async () => {
   try {
-    const [status, risk, controlSurface, audit] = await Promise.all([
+    const [status, risk, controlSurface, universe, audit] = await Promise.all([
       fetchJson("/status"),
       fetchJson("/risk/status"),
       fetchJson("/control-surface"),
+      fetchJson("/symbol-universe"),
       fetchJson("/audit/records"),
     ]);
     renderStatus(status);
     renderRisk(risk);
     renderCommands(controlSurface);
+    renderUniverse(universe);
     renderAudit(audit);
   } catch (error) {
     setText("api-state", "offline");

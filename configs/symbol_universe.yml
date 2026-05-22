@@ -1,0 +1,49 @@
+# Initial symbol-universe policy for PAPER research.
+# This file is declarative only. It does not enable exchange connectivity.
+policy_name: three_asset_btc_eth_usdc
+version: 1
+venue_family: binance_usdm_futures
+default_operator_mode: paper
+
+rules:
+  - BTCUSDC and ETHUSDC are the only initial executable instruments.
+  - SYN_ETHBTC is calculated from ETHUSDC / BTCUSDC and is never executable.
+  - ETHBTC is optional reference-only data and is disabled by default.
+  - No strategy session may run without current fees and expected_edge_after_costs.
+  - Full ETHBTC order-book downloads are not required for the MVP.
+
+instruments:
+  - symbol: BTCUSDC
+    role: executable
+    venue_symbol: BTCUSDC
+    execution_enabled: true
+    data_recording_level: full
+    enabled_by_default: true
+    notes: BTC beta anchor and executable hedge leg.
+
+  - symbol: ETHUSDC
+    role: executable
+    venue_symbol: ETHUSDC
+    execution_enabled: true
+    data_recording_level: full
+    enabled_by_default: true
+    notes: ETH exposure leg and initial alpha candidate.
+
+  - symbol: SYN_ETHBTC
+    role: derived
+    execution_enabled: false
+    data_recording_level: derived
+    enabled_by_default: true
+    formula: ETHUSDC / BTCUSDC
+    components:
+      - ETHUSDC
+      - BTCUSDC
+    notes: Derived ETH/BTC view calculated from executable USDC legs.
+
+  - symbol: ETHBTC
+    role: reference
+    venue_symbol: ETHBTC
+    execution_enabled: false
+    data_recording_level: disabled
+    enabled_by_default: false
+    notes: Optional direct reference feed only; not traded or deeply recorded by default.

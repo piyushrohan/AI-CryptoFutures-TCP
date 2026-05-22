@@ -34,6 +34,7 @@ class _StrEnum(str, Enum):
 class CommandType(_StrEnum):
     GET_SYSTEM_STATUS = "get_system_status"
     GET_CONTROL_SURFACE = "get_control_surface"
+    GET_SYMBOL_UNIVERSE = "get_symbol_universe"
     GET_RISK_STATUS = "get_risk_status"
     SEARCH_AUDIT_RECORDS = "search_audit_records"
     GET_AUDIT_RECORD = "get_audit_record"
@@ -228,6 +229,15 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         ServiceBoundary.API_GATEWAY,
         CommandEffect.READ_ONLY,
         execution_available=True,
+    ),
+    _definition(
+        CommandType.GET_SYMBOL_UNIVERSE,
+        "Overview dashboard",
+        "inspect BTC/ETH executable, derived, and reference symbol policy",
+        ServiceBoundary.API_GATEWAY,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+        notes="BTCUSDC and ETHUSDC are executable; SYN_ETHBTC is derived; ETHBTC is reference-only.",
     ),
     _definition(
         CommandType.GET_RISK_STATUS,

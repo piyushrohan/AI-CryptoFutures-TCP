@@ -4,6 +4,8 @@ The initial preferred strategy universe is Binance USDⓈ-M Futures perpetual pa
 
 This preference is not a hard-coded trading rule. It is a research and platform policy that must be validated dynamically through symbol metadata, fee schedules, liquidity, funding, and execution quality.
 
+For the initial BTC/ETH focus, `BTCUSDC` and `ETHUSDC` are the only executable instruments. `SYN_ETHBTC` is a derived, non-executable series calculated from `ETHUSDC / BTCUSDC`. Direct `ETHBTC` is reference-only and disabled by default unless a future policy change promotes it after fee, liquidity, portfolio, and risk validation.
+
 ## USDC-quoted Pair Preference
 
 USDC-quoted perpetual pairs are preferred initially because they may offer attractive maker-fee economics during certain venue promotions or account tiers. The platform should still evaluate each symbol before allowing a strategy session or trading workflow.
@@ -22,6 +24,19 @@ Symbol eligibility should consider:
 - Expected fill probability.
 - Funding behavior.
 - Dynamic maker and taker fees.
+
+## Three-Asset BTC/ETH Policy
+
+The initial focused universe is defined in [Three-Asset BTC/ETH Universe](../market_data/three_asset_universe.md) and `configs/symbol_universe.yml`.
+
+Initial roles:
+
+- `BTCUSDC`: executable, full data recording.
+- `ETHUSDC`: executable, full data recording.
+- `SYN_ETHBTC`: derived, non-executable, calculated from `ETHUSDC / BTCUSDC`.
+- `ETHBTC`: direct reference-only instrument, disabled by default.
+
+Full `ETHBTC` order book downloads are not required for the MVP because the first relative-value implementation should prove the two-leg USDC execution path. Direct `ETHBTC` may be used later as a lightweight benchmark or promoted only after explicit review.
 
 ## Dynamic Fees
 

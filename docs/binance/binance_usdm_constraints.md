@@ -23,6 +23,8 @@ The initial venue family is Binance USDⓈ-M Futures, with Binance testnet and p
 
 The initial preferred research and strategy universe is USDC-quoted perpetual contracts, such as `BTCUSDC` and `ETHUSDC`, when maker-fee economics are favorable after dynamic fees, funding, spread, fill probability, and adverse-selection costs are included.
 
+For the initial three-asset BTC/ETH focus, `BTCUSDC` and `ETHUSDC` are the only executable instruments. `SYN_ETHBTC` is a derived internal series and must never be sent to Binance. Direct `ETHBTC` is reference-only and disabled by default until symbol metadata, dynamic fees, liquidity, portfolio accounting, and risk tests justify an explicit promotion.
+
 ## Position Mode
 
 Binance USDⓈ-M supports one-way mode and hedge mode at the account position-mode level. Position mode is not merely a per-symbol preference. Future implementation must query and reconcile the actual account position mode before translating orders.
