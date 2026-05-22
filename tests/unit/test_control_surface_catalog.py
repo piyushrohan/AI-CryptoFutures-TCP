@@ -23,8 +23,11 @@ class ControlSurfaceCatalogTests(unittest.TestCase):
 
         for keyword in (
             "observe",
+            "account-state",
             "paper",
             "testnet",
+            "symbol metadata",
+            "fee policy",
             "training",
             "evaluation",
             "backtest",

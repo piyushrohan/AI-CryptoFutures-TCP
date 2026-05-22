@@ -168,6 +168,7 @@ Define the exchange and account truth model before trading workflows depend on i
 - Three-asset symbol-universe policy: `BTCUSDC` and `ETHUSDC` executable, `SYN_ETHBTC` derived and non-executable, `ETHBTC` reference-only and disabled by default.
 - Exchange-state snapshot storage.
 - Staleness and source timestamps.
+- Read-only local/mock API inspectors for exchange state, account state, symbol metadata, and fee policy. These inspectors must not connect to Binance or enable execution.
 
 ### Risk and Safety Gates
 

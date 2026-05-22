@@ -66,12 +66,16 @@ The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](do
 
 Use `make up` to start the local development stack. It starts a static frontend control shell at `http://localhost:3000`, an API bootstrap at `http://localhost:8080`, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, `autonomy_stage=observe_only`, and live trading disabled. Binance credentials are not required for local bootstrap.
 
-The Phase 1 API exposes read-only safety endpoints plus command validation only:
+The API exposes read-only safety and Phase 2 truth-model endpoints plus command validation only:
 
 - `GET /health`
 - `GET /status`
 - `GET /control-surface`
 - `GET /symbol-universe`
+- `GET /exchange-state`
+- `GET /account-state`
+- `GET /symbol-metadata`
+- `GET /fee-policy`
 - `GET /risk/status`
 - `GET /audit/records`
 - `POST /commands/validate`
@@ -80,4 +84,4 @@ The Phase 1 API exposes read-only safety endpoints plus command validation only:
 
 ## Development Status
 
-Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Paper fills, Binance connectivity, strategy sessions, model recommendations, and live trading are not implemented.
+Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Phase 2 adds deterministic local/mock account state, symbol metadata, fee policy, freshness checks, and read-only inspectors. Paper fills, Binance connectivity, strategy sessions, model recommendations, and live trading are not implemented.

@@ -1,8 +1,12 @@
 import unittest
 
 from apps.api.server import (
+    account_state_payload,
     audit_payload,
+    exchange_state_payload,
+    fee_policy_payload,
     health_payload,
+    symbol_metadata_payload,
     status_payload,
     validate_command_payload,
 )
@@ -60,6 +64,33 @@ class ApiStatusTests(unittest.TestCase):
         self.assertEqual(payload["status"], "ok")
         self.assertEqual(payload["service"], "audit")
         self.assertEqual(payload["records"], [])
+
+    def test_exchange_state_payload_is_phase_two_read_only(self):
+        payload = exchange_state_payload()
+
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["service"], "exchange_state")
+        self.assertEqual(payload["phase"], "deterministic_exchange_and_account_state")
+        self.assertTrue(payload["account_state"]["is_valid"])
+        self.assertIn("no Binance connectivity", payload["notes"])
+        self.assertIn("no order submission", payload["notes"])
+
+    def test_account_symbol_and_fee_payloads_are_available(self):
+        account = account_state_payload()
+        symbols = symbol_metadata_payload()
+        fees = fee_policy_payload()
+
+        self.assertEqual(account["service"], "account_state")
+        self.assertEqual(symbols["service"], "symbol_metadata")
+        self.assertEqual(fees["service"], "fee_policy")
+        self.assertEqual(
+            {item["symbol"] for item in symbols["symbols"] if item["is_executable"]},
+            {"BTCUSDC", "ETHUSDC"},
+        )
+        self.assertEqual(
+            {item["symbol"] for item in fees["fee_policies"]},
+            {"BTCUSDC", "ETHUSDC"},
+        )
 
 
 if __name__ == "__main__":

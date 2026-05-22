@@ -64,6 +64,55 @@
         </ul>
       </section>
 
+      <section class="panel wide" aria-labelledby="account-title">
+        <div class="panel-heading">
+          <h2 id="account-title">Account State</h2>
+          <span id="account-freshness" class="pill">local mock</span>
+        </div>
+        <dl class="status-grid">
+          <div>
+            <dt>Margin mode</dt>
+            <dd id="margin-mode">cross</dd>
+          </div>
+          <div>
+            <dt>Position mode</dt>
+            <dd id="position-mode">hedge</dd>
+          </div>
+          <div>
+            <dt>Collateral</dt>
+            <dd id="collateral-balance">0</dd>
+          </div>
+          <div>
+            <dt>Maintenance margin</dt>
+            <dd id="maintenance-margin">0</dd>
+          </div>
+          <div>
+            <dt>Liquidation distance</dt>
+            <dd id="liquidation-distance">1</dd>
+          </div>
+          <div>
+            <dt>Funding exposure</dt>
+            <dd id="funding-exposure">0</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel wide" aria-labelledby="metadata-title">
+        <div class="panel-heading">
+          <h2 id="metadata-title">Symbol Metadata</h2>
+          <span id="metadata-freshness" class="pill">timestamped</span>
+        </div>
+        <div id="metadata-list" class="command-list" aria-live="polite"></div>
+      </section>
+
+      <section class="panel wide" aria-labelledby="fee-title">
+        <div class="panel-heading">
+          <h2 id="fee-title">Fee Policy</h2>
+          <span id="fee-freshness" class="pill">configurable</span>
+        </div>
+        <div id="fee-list" class="command-list" aria-live="polite"></div>
+      </section>
+
       <section class="panel wide" aria-labelledby="universe-title">
         <div class="panel-heading">
           <h2 id="universe-title">Symbol Universe</h2>

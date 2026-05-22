@@ -11,6 +11,12 @@ from typing import Any
 from libs.config import RuntimeConfig, load_runtime_config
 from libs.schemas import CommandRequest, control_surface_payload, symbol_universe_payload
 from services.audit import InMemoryAuditRecorder
+from services.market_data import (
+    account_state_payload,
+    exchange_state_payload,
+    fee_policy_payload,
+    symbol_metadata_payload,
+)
 from services.risk import evaluate_command, risk_status_payload
 
 
@@ -91,6 +97,18 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/symbol-universe":
             self._send_json(HTTPStatus.OK, symbol_universe_payload())
             return
+        if self.path == "/exchange-state":
+            self._send_json(HTTPStatus.OK, exchange_state_payload())
+            return
+        if self.path == "/account-state":
+            self._send_json(HTTPStatus.OK, account_state_payload())
+            return
+        if self.path == "/symbol-metadata":
+            self._send_json(HTTPStatus.OK, symbol_metadata_payload())
+            return
+        if self.path == "/fee-policy":
+            self._send_json(HTTPStatus.OK, fee_policy_payload())
+            return
         if self.path == "/risk/status":
             self._send_json(HTTPStatus.OK, risk_status_payload(load_runtime_config()))
             return
@@ -106,6 +124,10 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     "/status",
                     "/control-surface",
                     "/symbol-universe",
+                    "/exchange-state",
+                    "/account-state",
+                    "/symbol-metadata",
+                    "/fee-policy",
                     "/risk/status",
                     "/audit/records",
                 ],
