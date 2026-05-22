@@ -113,6 +113,127 @@
         <div id="fee-list" class="command-list" aria-live="polite"></div>
       </section>
 
+      <section class="panel wide" aria-labelledby="paper-title">
+        <div class="panel-heading">
+          <h2 id="paper-title">Paper Trading</h2>
+          <span id="paper-state" class="pill">local only</span>
+        </div>
+        <form id="paper-order-form" class="order-form">
+          <label>
+            Symbol
+            <select name="symbol">
+              <option value="BTCUSDC">BTCUSDC</option>
+              <option value="ETHUSDC">ETHUSDC</option>
+            </select>
+          </label>
+          <label>
+            Side
+            <select name="side">
+              <option value="BUY">BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </label>
+          <label>
+            Book
+            <select name="book_side">
+              <option value="LONG">LONG</option>
+              <option value="SHORT">SHORT</option>
+            </select>
+          </label>
+          <label>
+            Quantity
+            <input name="quantity" value="0.001" inputmode="decimal" />
+          </label>
+          <label>
+            Limit
+            <input name="limit_price" value="64999.9" inputmode="decimal" />
+          </label>
+          <div class="form-actions">
+            <button type="button" id="preview-paper-order">Preview</button>
+            <button type="submit">Submit</button>
+          </div>
+        </form>
+        <div class="split-grid">
+          <div class="metric-block">
+            <h3>Exposure</h3>
+            <dl class="status-grid compact">
+              <div>
+                <dt>Gross</dt>
+                <dd id="paper-gross">0</dd>
+              </div>
+              <div>
+                <dt>Net</dt>
+                <dd id="paper-net">0</dd>
+              </div>
+              <div>
+                <dt>Hedge ratio</dt>
+                <dd id="paper-hedge-ratio">0</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="metric-block">
+            <h3>Order Result</h3>
+            <pre id="paper-result" class="data-output">No paper order preview yet.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel wide" aria-labelledby="research-title">
+        <div class="panel-heading">
+          <h2 id="research-title">Research And Backtesting</h2>
+          <span class="pill">synthetic fixture</span>
+        </div>
+        <div class="split-grid">
+          <div class="metric-block">
+            <h3>Microstructure</h3>
+            <dl class="status-grid compact">
+              <div>
+                <dt>Features</dt>
+                <dd id="feature-count">0</dd>
+              </div>
+              <div>
+                <dt>SYN_ETHBTC</dt>
+                <dd id="synthetic-count">0</dd>
+              </div>
+              <div>
+                <dt>Source</dt>
+                <dd id="feature-source">local</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="metric-block">
+            <h3>Backtest</h3>
+            <dl class="status-grid compact">
+              <div>
+                <dt>Fill ratio</dt>
+                <dd id="backtest-fill-ratio">0</dd>
+              </div>
+              <div>
+                <dt>Maker/taker</dt>
+                <dd id="backtest-maker-ratio">0</dd>
+              </div>
+              <div>
+                <dt>Expected edge</dt>
+                <dd id="backtest-edge">0</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel wide" aria-labelledby="strategy-title">
+        <div class="panel-heading">
+          <h2 id="strategy-title">Paper Strategy Sessions</h2>
+          <span id="strategy-state" class="pill">inspection</span>
+        </div>
+        <div class="panic-actions">
+          <button type="button" id="start-strategy">Start</button>
+          <button type="button" id="pause-strategy">Pause</button>
+          <button type="button" id="stop-strategy">Stop</button>
+        </div>
+        <pre id="strategy-output" class="data-output">No strategy session started.</pre>
+      </section>
+
       <section class="panel wide" aria-labelledby="universe-title">
         <div class="panel-heading">
           <h2 id="universe-title">Symbol Universe</h2>

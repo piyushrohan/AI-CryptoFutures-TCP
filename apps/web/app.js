@@ -15,6 +15,18 @@ const fetchJson = async (path) => {
   return response.json();
 };
 
+const postJson = async (path, payload) => {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload || {}),
+  });
+  if (!response.ok) {
+    throw new Error(`${path} returned ${response.status}`);
+  }
+  return response.json();
+};
+
 const renderStatus = (payload) => {
   const runtime = payload.runtime;
   setText("api-state", "connected");
@@ -165,6 +177,114 @@ const renderAudit = (payload) => {
     .join("\n");
 };
 
+const renderPaper = (payload) => {
+  const exposure = payload.portfolio?.exposure || payload.exposure || {};
+  setText("paper-gross", exposure.gross_exposure || "0");
+  setText("paper-net", exposure.net_exposure || "0");
+  setText("paper-hedge-ratio", exposure.hedge_ratio || "0");
+  setText("paper-state", payload.panic_halted ? "halted" : "paper only");
+};
+
+const renderResearch = (payload) => {
+  setText("feature-count", `${payload.features?.length || 0}`);
+  setText("synthetic-count", `${payload.synthetic_ethbtc?.length || 0}`);
+  setText("feature-source", payload.source || "local");
+};
+
+const renderBacktest = (payload) => {
+  const report = payload.report || {};
+  setText("backtest-fill-ratio", report.fill_ratio || "0");
+  setText("backtest-maker-ratio", report.maker_taker_ratio || "0");
+  setText("backtest-edge", report.expected_edge_after_costs || "0");
+};
+
+const renderStrategy = (payload) => {
+  const output = document.getElementById("strategy-output");
+  if (!output) {
+    return;
+  }
+  const recommendations = payload.recommendations || [];
+  const sessions = payload.sessions || [];
+  const latest = sessions[sessions.length - 1];
+  setText("strategy-state", latest ? latest.status : "inspection");
+  output.textContent = JSON.stringify(
+    {
+      latest_session: latest || null,
+      latest_recommendation: recommendations[recommendations.length - 1] || null,
+    },
+    null,
+    2,
+  );
+};
+
+const paperOrderPayload = () => {
+  const form = document.getElementById("paper-order-form");
+  const formData = new FormData(form);
+  return Object.fromEntries(formData.entries());
+};
+
+const renderPaperResult = (payload) => {
+  const output = document.getElementById("paper-result");
+  if (output) {
+    output.textContent = JSON.stringify(payload, null, 2);
+  }
+};
+
+const bindPaperForm = () => {
+  const form = document.getElementById("paper-order-form");
+  const preview = document.getElementById("preview-paper-order");
+  if (!form || !preview) {
+    return;
+  }
+  preview.addEventListener("click", async () => {
+    try {
+      renderPaperResult(await postJson("/paper/preview", paperOrderPayload()));
+    } catch (error) {
+      renderPaperResult({ status: "error", reason: String(error) });
+    }
+  });
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    try {
+      renderPaperResult(await postJson("/paper/orders", paperOrderPayload()));
+      renderPaper(await fetchJson("/paper"));
+      renderAudit(await fetchJson("/audit/records"));
+    } catch (error) {
+      renderPaperResult({ status: "error", reason: String(error) });
+    }
+  });
+};
+
+const bindStrategyControls = () => {
+  const actions = [
+    ["start-strategy", "/strategy/sessions/start"],
+    ["pause-strategy", "/strategy/sessions/pause"],
+    ["stop-strategy", "/strategy/sessions/stop"],
+  ];
+  for (const [id, path] of actions) {
+    const button = document.getElementById(id);
+    if (!button) {
+      continue;
+    }
+    button.addEventListener("click", async () => {
+      try {
+        const payload = await postJson(path, {});
+        renderStrategy({
+          sessions: payload.session ? [payload.session] : [],
+          recommendations: payload.recommendations || [],
+        });
+      } catch (error) {
+        renderStrategy({
+          sessions: [],
+          recommendations: [
+            { action: "ERROR", explanation: String(error) },
+          ],
+        });
+      }
+    });
+  }
+};
+
 const boot = async () => {
   try {
     const [
@@ -176,6 +296,10 @@ const boot = async () => {
       metadata,
       fees,
       audit,
+      paper,
+      research,
+      backtest,
+      strategy,
     ] = await Promise.all([
       fetchJson("/status"),
       fetchJson("/risk/status"),
@@ -185,6 +309,10 @@ const boot = async () => {
       fetchJson("/symbol-metadata"),
       fetchJson("/fee-policy"),
       fetchJson("/audit/records"),
+      fetchJson("/paper"),
+      fetchJson("/research/features"),
+      fetchJson("/backtests/report"),
+      fetchJson("/strategy/sessions"),
     ]);
     renderStatus(status);
     renderRisk(risk);
@@ -194,9 +322,15 @@ const boot = async () => {
     renderMetadata(metadata);
     renderFees(fees);
     renderAudit(audit);
+    renderPaper(paper);
+    renderResearch(research);
+    renderBacktest(backtest);
+    renderStrategy(strategy);
   } catch (error) {
     setText("api-state", "offline");
   }
 };
 
+bindPaperForm();
+bindStrategyControls();
 boot();

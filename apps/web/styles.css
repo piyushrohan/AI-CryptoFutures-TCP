@@ -142,6 +142,10 @@ h2 {
   margin: 0;
 }
 
+.status-grid.compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .status-grid div {
   min-width: 0;
   padding: 12px;
@@ -205,6 +209,90 @@ dd {
   gap: 8px;
 }
 
+.order-form {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.order-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.order-form input,
+.order-form select {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  padding: 0 10px;
+}
+
+.form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-self: end;
+}
+
+.form-actions button,
+.panic-actions button {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.form-actions button:first-child,
+.panic-actions button:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.metric-block {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fafbfc;
+  padding: 12px;
+}
+
+.metric-block h3 {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.data-output {
+  min-height: 96px;
+  margin: 0;
+  overflow: auto;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 12px;
+  white-space: pre-wrap;
+}
+
 .empty-state {
   min-height: 72px;
   display: grid;
@@ -230,7 +318,9 @@ dd {
   .layout,
   .status-grid,
   .command-list,
-  .panic-actions {
+  .panic-actions,
+  .order-form,
+  .split-grid {
     grid-template-columns: 1fr;
   }
 }
