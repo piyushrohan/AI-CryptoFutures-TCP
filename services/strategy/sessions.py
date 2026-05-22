@@ -197,7 +197,7 @@ class StrategySessionManager:
             risk_context="paper session only; no order intent produced",
             explanation=(
                 "No trade is emitted because this phase implements session "
-                "control and inspection only, not strategy alpha."
+                "control and inspection only; strategy alpha is not implemented."
             ),
             rejected_alternatives=(
                 "direct ETHBTC execution remains disabled",

@@ -74,7 +74,16 @@ class ControlSurfaceCatalogTests(unittest.TestCase):
         definition = command_definition(CommandType.CREATE_STRATEGY_SESSION)
 
         self.assertTrue(definition.requires_fee_model)
-        self.assertFalse(definition.execution_available)
+        self.assertTrue(definition.execution_available)
+
+    def test_paper_trading_commands_are_local_only(self):
+        submit = command_definition(CommandType.SUBMIT_PAPER_ORDER)
+        reset = command_definition(CommandType.RESET_PAPER_PORTFOLIO)
+
+        self.assertTrue(submit.execution_available)
+        self.assertEqual(submit.effect.value, "simulated_trading")
+        self.assertTrue(submit.requires_fee_model)
+        self.assertTrue(reset.execution_available)
 
 
 if __name__ == "__main__":
