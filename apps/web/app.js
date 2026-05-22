@@ -84,6 +84,70 @@ const renderUniverse = (payload) => {
   }
 };
 
+const renderAccount = (payload) => {
+  const account = payload.account_state;
+  const collateral = account.collateral_assets?.[0];
+  setText("margin-mode", account.margin_mode);
+  setText("position-mode", account.position_mode);
+  setText("collateral-balance", collateral ? collateral.wallet_balance : "0");
+  setText("maintenance-margin", account.maintenance_margin);
+  setText("liquidation-distance", account.liquidation_distance_ratio);
+  setText("funding-exposure", account.funding_exposure);
+  setText(
+    "account-freshness",
+    account.freshness.is_stale ? "stale" : account.freshness.source,
+  );
+};
+
+const renderMetadata = (payload) => {
+  const list = document.getElementById("metadata-list");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = "";
+  for (const symbol of payload.symbols || []) {
+    const item = document.createElement("article");
+    item.className = "command-item";
+    const title = document.createElement("strong");
+    title.textContent = symbol.symbol;
+    const filters = symbol.filters || {};
+    const meta = document.createElement("span");
+    meta.textContent = `${symbol.contract_status} -> ${symbol.role}`;
+    const detail = document.createElement("span");
+    detail.textContent = symbol.is_executable
+      ? `tick ${filters.tick_size}, lot ${filters.lot_size}, min notional ${filters.min_notional}`
+      : "not executable";
+    item.append(title, meta, detail);
+    list.appendChild(item);
+  }
+  const stale = (payload.symbols || []).some((symbol) => symbol.freshness?.is_stale);
+  setText("metadata-freshness", stale ? "stale" : "fresh");
+};
+
+const renderFees = (payload) => {
+  const list = document.getElementById("fee-list");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = "";
+  for (const policy of payload.fee_policies || []) {
+    const item = document.createElement("article");
+    item.className = "command-item";
+    const title = document.createElement("strong");
+    title.textContent = policy.symbol;
+    const maker = document.createElement("span");
+    maker.textContent = `maker ${policy.maker_fee_rate}`;
+    const taker = document.createElement("span");
+    taker.textContent = `taker ${policy.taker_fee_rate}`;
+    item.append(title, maker, taker);
+    list.appendChild(item);
+  }
+  const stale = (payload.fee_policies || []).some((policy) => {
+    return policy.freshness?.is_stale;
+  });
+  setText("fee-freshness", stale ? "stale" : "fresh");
+};
+
 const renderAudit = (payload) => {
   const records = payload.records || [];
   setText("audit-count", `${records.length} records`);
@@ -103,17 +167,32 @@ const renderAudit = (payload) => {
 
 const boot = async () => {
   try {
-    const [status, risk, controlSurface, universe, audit] = await Promise.all([
+    const [
+      status,
+      risk,
+      controlSurface,
+      universe,
+      account,
+      metadata,
+      fees,
+      audit,
+    ] = await Promise.all([
       fetchJson("/status"),
       fetchJson("/risk/status"),
       fetchJson("/control-surface"),
       fetchJson("/symbol-universe"),
+      fetchJson("/account-state"),
+      fetchJson("/symbol-metadata"),
+      fetchJson("/fee-policy"),
       fetchJson("/audit/records"),
     ]);
     renderStatus(status);
     renderRisk(risk);
     renderCommands(controlSurface);
     renderUniverse(universe);
+    renderAccount(account);
+    renderMetadata(metadata);
+    renderFees(fees);
     renderAudit(audit);
   } catch (error) {
     setText("api-state", "offline");

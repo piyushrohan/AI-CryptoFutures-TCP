@@ -183,6 +183,8 @@ The market data service ingests, normalizes, stores, and publishes market data n
 
 It should track source timestamps, receive timestamps, data freshness, symbol metadata, mark prices, index prices, funding rates, and venue health.
 
+Phase 2 implements this boundary as deterministic local/mock truth-model scaffolding. The API exposes read-only `exchange-state`, `account-state`, `symbol-metadata`, and `fee-policy` views with source labels and freshness metadata. These views do not connect to Binance and must not be treated as exchange truth for execution.
+
 ### order book service
 
 The order book service maintains normalized order book snapshots and deltas for supported symbols. It should provide frontend displays, liquidity checks, spread and depth measures, order book imbalance, microprice inputs, fill-probability inputs, stale-data detection, and execution pre-checks.
@@ -206,6 +208,8 @@ It has veto authority over manual and AI-assisted orders.
 The portfolio engine owns normalized portfolio state: balances, positions, open orders, margin usage, realized PnL, unrealized PnL, exposure, symbol-level books, and portfolio-level aggregates.
 
 It must support future multi-symbol portfolio management, cross-margin-aware exposure, hedge ratio, beta exposure, funding exposure, liquidation-buffer calculations, and hedge-mode-aware position accounting. See [Margin and Exposure Model](../portfolio/margin_and_exposure_model.md).
+
+Phase 2 account-state scaffolding uses independent `LONG` and `SHORT` books for `BTCUSDC` and `ETHUSDC` in hedge mode, even when quantities are zero. Portfolio Margin remains research-only and unavailable as an implemented margin mode.
 
 ### execution engine
 

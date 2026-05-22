@@ -52,6 +52,8 @@ Future implementation should support fee sources such as:
 
 The active fee assumption must be visible in the frontend and stored in audit records for trading decisions, model decisions, paper fills, backtests, and evaluations.
 
+Phase 2 exposes a local configurable fee-policy inspector for `BTCUSDC` and `ETHUSDC`. The values are local development assumptions, source-labeled, timestamped, and validated for freshness. They are not Binance account commission data and must not be used for live or testnet execution.
+
 ## No Permanent Zero-fee Assumption
 
 Fee promotions must not be assumed permanent. The system must not hard-code permanent zero maker fees for USDC pairs or any other venue universe.

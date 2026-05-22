@@ -35,6 +35,10 @@ class CommandType(_StrEnum):
     GET_SYSTEM_STATUS = "get_system_status"
     GET_CONTROL_SURFACE = "get_control_surface"
     GET_SYMBOL_UNIVERSE = "get_symbol_universe"
+    GET_EXCHANGE_STATE = "get_exchange_state"
+    GET_ACCOUNT_STATE = "get_account_state"
+    GET_SYMBOL_METADATA = "get_symbol_metadata"
+    GET_FEE_POLICY = "get_fee_policy"
     GET_RISK_STATUS = "get_risk_status"
     SEARCH_AUDIT_RECORDS = "search_audit_records"
     GET_AUDIT_RECORD = "get_audit_record"
@@ -238,6 +242,39 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         CommandEffect.READ_ONLY,
         execution_available=True,
         notes="BTCUSDC and ETHUSDC are executable; SYN_ETHBTC is derived; ETHBTC is reference-only.",
+    ),
+    _definition(
+        CommandType.GET_EXCHANGE_STATE,
+        "Account-state inspector",
+        "inspect deterministic local exchange-state snapshot",
+        ServiceBoundary.MARKET_DATA_SERVICE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+        notes="Phase 2 local/mock state only; no exchange connectivity.",
+    ),
+    _definition(
+        CommandType.GET_ACCOUNT_STATE,
+        "Account-state inspector",
+        "inspect margin mode, position mode, collateral, exposure, and books",
+        ServiceBoundary.PORTFOLIO_ENGINE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+    ),
+    _definition(
+        CommandType.GET_SYMBOL_METADATA,
+        "Symbol metadata inspector",
+        "inspect symbol filters, tick size, lot size, and min notional",
+        ServiceBoundary.MARKET_DATA_SERVICE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+    ),
+    _definition(
+        CommandType.GET_FEE_POLICY,
+        "Fee policy inspector",
+        "inspect dynamic fee assumptions, source, freshness, and promotions",
+        ServiceBoundary.RISK_ENGINE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
     ),
     _definition(
         CommandType.GET_RISK_STATUS,
