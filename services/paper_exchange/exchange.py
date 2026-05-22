@@ -187,11 +187,48 @@ class InMemoryPaperExchange:
 
     def panic_halt(self) -> dict[str, object]:
         self._halted = True
+        self._risk_state = PaperRiskState(panic_halt_active=True)
         return {
             "status": "ok",
             "service": "paper_exchange",
             "panic_halt": True,
             "execution": "paper_only",
+        }
+
+    def panic_cancel_open_orders(self) -> dict[str, object]:
+        event = ReconciliationEvent(
+            event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
+            order_id="all-open-paper-orders",
+            status=ReconciliationStatus.CANCELED,
+            reason="paper panic cancel recorded; filled orders are immutable",
+            created_at=now_utc(),
+        )
+        self._reconciliation_events.append(event)
+        return {
+            "status": "ok",
+            "service": "paper_exchange",
+            "execution": "paper_only",
+            "open_orders_canceled": 0,
+            "reconciliation_event": event.to_public_dict(),
+        }
+
+    def panic_flatten_positions(self) -> dict[str, object]:
+        self._account_state = default_account_state()
+        event = ReconciliationEvent(
+            event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
+            order_id="all-paper-positions",
+            status=ReconciliationStatus.MATCHED,
+            reason="paper positions flattened by resetting local hedge books",
+            created_at=now_utc(),
+        )
+        self._reconciliation_events.append(event)
+        return {
+            "status": "ok",
+            "service": "paper_exchange",
+            "execution": "paper_only",
+            "flattened": True,
+            "portfolio": self.portfolio_payload(),
+            "reconciliation_event": event.to_public_dict(),
         }
 
     def quote_for_symbol(
