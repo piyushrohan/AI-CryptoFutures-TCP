@@ -40,4 +40,6 @@ jobs:
 
       - name: Secret pattern scan
         run: |
+          # Baseline guardrail: fail the build if common token/key formats are committed.
+          # This complements review discipline; it is not a replacement for managed secret scanning.
           ! git grep -n -E '(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' -- . ':!*.pyc'

@@ -36,6 +36,7 @@ docs-check:
 	@test -f docs/code_review.md
 	@test -f configs/symbol_universe.yml
 
+# Baseline guardrail: catch common committed token/key formats during local checks.
 secret-scan:
 	@! git grep -n -E '(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' -- . ':!*.pyc'
 
