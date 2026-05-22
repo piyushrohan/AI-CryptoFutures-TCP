@@ -34,6 +34,9 @@ class ReconciliationStatus(str, Enum):
     MATCHED = "matched"
     REJECTED = "rejected"
     CANCELED = "canceled"
+    RESTING = "resting"
+    PARTIALLY_FILLED = "partially_filled"
+    EXPIRED = "expired"
 
 
 def decimal_from(value: object, field_name: str) -> Decimal:
@@ -252,6 +255,12 @@ class PaperOrder:
     created_at: datetime
     updated_at: datetime
     fill: PaperFill | None = None
+    fills: tuple[PaperFill, ...] = ()
+    filled_quantity: Decimal = Decimal("0")
+
+    @property
+    def remaining_quantity(self) -> Decimal:
+        return max(Decimal("0"), self.intent.quantity - self.filled_quantity)
 
     def to_public_dict(self) -> dict[str, object]:
         return {
@@ -261,6 +270,9 @@ class PaperOrder:
             "created_at": self.created_at.isoformat(),
             "updated_at": self.updated_at.isoformat(),
             "fill": self.fill.to_public_dict() if self.fill else None,
+            "fills": [item.to_public_dict() for item in self.fills],
+            "filled_quantity": decimal_str(self.filled_quantity),
+            "remaining_quantity": decimal_str(self.remaining_quantity),
         }
 
 

@@ -197,6 +197,15 @@ def paper_reset_payload(
     }
 
 
+def paper_process_payload(
+    body: dict[str, Any] | None = None,
+    *,
+    exchange: InMemoryPaperExchange | None = None,
+) -> dict[str, Any]:
+    selected_exchange = exchange or _PAPER_EXCHANGE
+    return selected_exchange.process_open_orders()
+
+
 def strategy_start_payload(
     body: dict[str, Any] | None = None,
     *,
@@ -323,6 +332,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     "/paper/portfolio",
                     "/paper/orders",
                     "/paper/reconciliation",
+                    "/paper/process",
                     "/research/features",
                     "/backtests/report",
                     "/strategy/sessions",
@@ -350,6 +360,16 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     str(payload.get("order_id", ""))
                 )
             )
+            return
+        if self.path == "/paper/expire":
+            self._handle_json_payload(
+                lambda payload: _PAPER_EXCHANGE.expire_order(
+                    str(payload.get("order_id", ""))
+                )
+            )
+            return
+        if self.path == "/paper/process":
+            self._handle_json_payload(paper_process_payload)
             return
         if self.path == "/paper/panic/halt":
             self._handle_json_payload(lambda payload: _PAPER_EXCHANGE.panic_halt())

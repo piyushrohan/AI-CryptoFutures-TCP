@@ -6,7 +6,7 @@ Binance, sign requests, submit venue orders, or model production-grade matching.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -123,6 +123,31 @@ def _would_cross(intent: PaperOrderIntent, quote: PaperMarketQuote) -> bool:
     return intent.limit_price <= quote.best_bid
 
 
+def _queue_fill_probability(intent: PaperOrderIntent, quote: PaperMarketQuote) -> Decimal:
+    if intent.side == OrderSide.BUY:
+        if intent.limit_price > quote.best_bid:
+            base = Decimal("0.78")
+        elif intent.limit_price == quote.best_bid:
+            base = Decimal("0.58")
+        else:
+            base = Decimal("0.32")
+        imbalance_bonus = (quote.ask_size - quote.bid_size) / (
+            quote.bid_size + quote.ask_size
+        )
+    else:
+        if intent.limit_price < quote.best_ask:
+            base = Decimal("0.78")
+        elif intent.limit_price == quote.best_ask:
+            base = Decimal("0.58")
+        else:
+            base = Decimal("0.32")
+        imbalance_bonus = (quote.bid_size - quote.ask_size) / (
+            quote.bid_size + quote.ask_size
+        )
+    probability = base + imbalance_bonus * Decimal("0.15")
+    return min(Decimal("0.95"), max(Decimal("0.05"), probability))
+
+
 def calculate_expected_edge(
     intent: PaperOrderIntent,
     fee_policy: FeePolicy,
@@ -202,12 +227,24 @@ class InMemoryPaperExchange:
         return payload
 
     def panic_cancel_open_orders(self) -> dict[str, object]:
+        canceled_count = 0
+        updated_orders: list[PaperOrder] = []
+        now = now_utc()
+        for order in self._orders:
+            if order.status in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}:
+                canceled_count += 1
+                updated_orders.append(
+                    replace(order, status=OrderStatus.CANCELED, updated_at=now)
+                )
+            else:
+                updated_orders.append(order)
+        self._orders = updated_orders
         event = ReconciliationEvent(
             event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
             order_id="all-open-paper-orders",
             status=ReconciliationStatus.CANCELED,
-            reason="paper panic cancel recorded; filled orders are immutable",
-            created_at=now_utc(),
+            reason="paper panic cancel recorded",
+            created_at=now,
         )
         self._reconciliation_events.append(event)
         self._persist_state()
@@ -215,7 +252,7 @@ class InMemoryPaperExchange:
             "status": "ok",
             "service": "paper_exchange",
             "execution": "paper_only",
-            "open_orders_canceled": 0,
+            "open_orders_canceled": canceled_count,
             "reconciliation_event": event.to_public_dict(),
         }
 
@@ -375,43 +412,116 @@ class InMemoryPaperExchange:
             self._persist_state()
             return PaperSubmitResult(False, preview, None, event, risk_result)
 
-        fill_fee = preview.expected_edge.maker_fee
-        fill = PaperFill(
-            fill_id=f"paper-fill-{len(self._orders) + 1:06d}",
-            order_id=order_id,
-            symbol=intent.symbol,
-            side=intent.side,
-            book_side=intent.book_side,
-            quantity=intent.quantity,
-            price=intent.limit_price,
-            liquidity="maker",
-            fee=fill_fee,
-            created_at=now,
-        )
         order = PaperOrder(
             order_id=order_id,
             intent=intent,
-            status=OrderStatus.FILLED,
+            status=OrderStatus.NEW,
             created_at=now,
             updated_at=now,
-            fill=fill,
         )
         self._orders.append(order)
-        self._account_state = apply_paper_fill(self._account_state, fill)
         event = ReconciliationEvent(
             event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
             order_id=order_id,
-            status=ReconciliationStatus.MATCHED,
-            reason="deterministic paper fill applied",
+            status=ReconciliationStatus.RESTING,
+            reason="deterministic paper order accepted onto local book",
             created_at=now,
         )
         self._reconciliation_events.append(event)
         self._persist_state()
         return PaperSubmitResult(True, preview, order, event, risk_result)
 
+    def process_open_orders(
+        self,
+        *,
+        reference_time: datetime | None = None,
+    ) -> dict[str, object]:
+        now = reference_time or now_utc()
+        processed: list[dict[str, object]] = []
+        for order in tuple(self._orders):
+            if order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}:
+                continue
+            quote = self.quote_for_symbol(order.intent.symbol, now)
+            if quote is None:
+                continue
+            probability = _queue_fill_probability(order.intent, quote)
+            if probability >= Decimal("0.60") or order.status == OrderStatus.PARTIALLY_FILLED:
+                updated = self._fill_order(order, order.remaining_quantity, now)
+            elif probability >= Decimal("0.25"):
+                updated = self._fill_order(
+                    order,
+                    min(order.remaining_quantity, order.intent.quantity / Decimal("2")),
+                    now,
+                )
+            else:
+                updated = replace(order, updated_at=now)
+            processed.append(
+                {
+                    "order_id": updated.order_id,
+                    "status": updated.status.value,
+                    "filled_quantity": decimal_str(updated.filled_quantity),
+                    "remaining_quantity": decimal_str(updated.remaining_quantity),
+                    "queue_fill_probability": decimal_str(probability),
+                }
+            )
+        self._persist_state()
+        return {
+            "status": "ok",
+            "service": "paper_exchange",
+            "execution": "paper_only",
+            "processed": processed,
+        }
+
+    def expire_order(self, order_id: str) -> dict[str, object]:
+        now = now_utc()
+        for index, order in enumerate(self._orders):
+            if order.order_id != order_id:
+                continue
+            if order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}:
+                return {
+                    "status": "ok",
+                    "service": "paper_exchange",
+                    "order_id": order_id,
+                    "expired": False,
+                    "reason": "only open paper orders can expire",
+                }
+            expired = replace(order, status=OrderStatus.EXPIRED, updated_at=now)
+            self._orders[index] = expired
+            event = ReconciliationEvent(
+                event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
+                order_id=order_id,
+                status=ReconciliationStatus.EXPIRED,
+                reason="paper order expired by deterministic lifecycle",
+                created_at=now,
+            )
+            self._reconciliation_events.append(event)
+            self._persist_state()
+            return {
+                "status": "ok",
+                "service": "paper_exchange",
+                "order_id": order_id,
+                "expired": True,
+                "reconciliation_event": event.to_public_dict(),
+            }
+        return {
+            "status": "not_found",
+            "service": "paper_exchange",
+            "order_id": order_id,
+        }
+
     def cancel_order(self, order_id: str) -> dict[str, object]:
         for order in self._orders:
             if order.order_id == order_id:
+                if order.status in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}:
+                    updated = replace(
+                        order,
+                        status=OrderStatus.CANCELED,
+                        updated_at=now_utc(),
+                    )
+                    self._orders = [
+                        updated if item.order_id == order_id else item
+                        for item in self._orders
+                    ]
                 event = ReconciliationEvent(
                     event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
                     order_id=order_id,
@@ -425,8 +535,16 @@ class InMemoryPaperExchange:
                     "status": "ok",
                     "service": "paper_exchange",
                     "order_id": order_id,
-                    "canceled": order.status != OrderStatus.FILLED,
-                    "reason": "filled paper orders cannot be unfilled",
+                    "canceled": order.status in {
+                        OrderStatus.NEW,
+                        OrderStatus.PARTIALLY_FILLED,
+                    },
+                    "reason": (
+                        "paper order canceled"
+                        if order.status
+                        in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}
+                        else "terminal paper orders cannot be canceled"
+                    ),
                     "reconciliation_event": event.to_public_dict(),
                 }
         return {
@@ -487,6 +605,63 @@ class InMemoryPaperExchange:
         self._state_store.persist_reconciliation(self.reconciliation_payload())
         self._state_store.persist_portfolio(self.portfolio_payload())
         self._state_store.persist_snapshot(self.summary_payload())
+
+    def _fill_order(
+        self,
+        order: PaperOrder,
+        fill_quantity: Decimal,
+        created_at: datetime,
+    ) -> PaperOrder:
+        quantity = min(order.remaining_quantity, fill_quantity)
+        if quantity <= 0:
+            return order
+        fee_policy = _fee_for(self._account_state, order.intent.symbol)
+        fee_rate = fee_policy.maker_fee_rate if fee_policy else Decimal("0")
+        fill = PaperFill(
+            fill_id=f"paper-fill-{sum(len(item.fills) for item in self._orders) + 1:06d}",
+            order_id=order.order_id,
+            symbol=order.intent.symbol,
+            side=order.intent.side,
+            book_side=order.intent.book_side,
+            quantity=quantity,
+            price=order.intent.limit_price,
+            liquidity="maker",
+            fee=quantity * order.intent.limit_price * fee_rate,
+            created_at=created_at,
+        )
+        filled_quantity = order.filled_quantity + quantity
+        status = (
+            OrderStatus.FILLED
+            if filled_quantity >= order.intent.quantity
+            else OrderStatus.PARTIALLY_FILLED
+        )
+        updated = replace(
+            order,
+            status=status,
+            updated_at=created_at,
+            fill=fill,
+            fills=(*order.fills, fill),
+            filled_quantity=filled_quantity,
+        )
+        self._orders = [
+            updated if item.order_id == order.order_id else item
+            for item in self._orders
+        ]
+        self._account_state = apply_paper_fill(self._account_state, fill)
+        event_status = (
+            ReconciliationStatus.MATCHED
+            if status == OrderStatus.FILLED
+            else ReconciliationStatus.PARTIALLY_FILLED
+        )
+        event = ReconciliationEvent(
+            event_id=f"paper-recon-{len(self._reconciliation_events) + 1:06d}",
+            order_id=order.order_id,
+            status=event_status,
+            reason="deterministic maker queue fill applied",
+            created_at=created_at,
+        )
+        self._reconciliation_events.append(event)
+        return updated
 
 
 def default_paper_exchange() -> InMemoryPaperExchange:

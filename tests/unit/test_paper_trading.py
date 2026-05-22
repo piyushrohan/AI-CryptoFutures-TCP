@@ -25,7 +25,7 @@ def btc_buy_long() -> PaperOrderIntent:
             "side": "BUY",
             "book_side": "LONG",
             "quantity": "0.001",
-            "limit_price": "64999.9",
+            "limit_price": "65000.4",
         }
     )
 
@@ -40,10 +40,12 @@ class PaperTradingTests(unittest.TestCase):
 
         self.assertTrue(preview.accepted)
         self.assertTrue(result.accepted)
-        self.assertEqual(result.order.status.value, "FILLED")
+        self.assertEqual(result.order.status.value, "NEW")
+        processed = exchange.process_open_orders(reference_time=REFERENCE_TIME)
+        self.assertEqual(processed["processed"][0]["status"], "FILLED")
         self.assertEqual(
             exchange.portfolio_payload()["exposure"]["gross_exposure"],
-            "64.9999",
+            "65.0004",
         )
 
     def test_post_only_crossing_is_rejected(self):
@@ -84,9 +86,51 @@ class PaperTradingTests(unittest.TestCase):
             preview.reasons,
         )
 
+    def test_resting_order_can_partially_fill_and_cancel(self):
+        exchange = InMemoryPaperExchange()
+        intent = PaperOrderIntent.from_mapping(
+            {
+                "symbol": "BTCUSDC",
+                "side": "BUY",
+                "book_side": "LONG",
+                "quantity": "0.002",
+                "limit_price": "64999.9",
+            }
+        )
+        result = exchange.submit_order(intent, reference_time=REFERENCE_TIME)
+
+        processed = exchange.process_open_orders(reference_time=REFERENCE_TIME)
+        canceled = exchange.cancel_order(result.order.order_id)
+
+        self.assertEqual(result.order.status.value, "NEW")
+        self.assertEqual(processed["processed"][0]["status"], "PARTIALLY_FILLED")
+        self.assertTrue(canceled["canceled"])
+        self.assertEqual(exchange.orders()[0].status.value, "CANCELED")
+
+    def test_resting_order_can_expire(self):
+        exchange = InMemoryPaperExchange()
+        result = exchange.submit_order(
+            PaperOrderIntent.from_mapping(
+                {
+                    "symbol": "BTCUSDC",
+                    "side": "BUY",
+                    "book_side": "LONG",
+                    "quantity": "0.001",
+                    "limit_price": "64999.9",
+                }
+            ),
+            reference_time=REFERENCE_TIME,
+        )
+
+        expired = exchange.expire_order(result.order.order_id)
+
+        self.assertTrue(expired["expired"])
+        self.assertEqual(exchange.orders()[0].status.value, "EXPIRED")
+
     def test_short_book_does_not_close_long_book(self):
         exchange = InMemoryPaperExchange()
         exchange.submit_order(btc_buy_long(), reference_time=REFERENCE_TIME)
+        exchange.process_open_orders(reference_time=REFERENCE_TIME)
         exchange.submit_order(
             PaperOrderIntent.from_mapping(
                 {
@@ -94,11 +138,12 @@ class PaperTradingTests(unittest.TestCase):
                     "side": "SELL",
                     "book_side": "SHORT",
                     "quantity": "0.001",
-                    "limit_price": "65000.6",
+                    "limit_price": "65000.4",
                 }
             ),
             reference_time=REFERENCE_TIME,
         )
+        exchange.process_open_orders(reference_time=REFERENCE_TIME)
         books = {
             (book.symbol, book.side): book
             for book in exchange.account_state().position_books
@@ -157,6 +202,7 @@ class PaperTradingTests(unittest.TestCase):
     def test_panic_halt_and_flatten_are_paper_only(self):
         exchange = InMemoryPaperExchange()
         exchange.submit_order(btc_buy_long(), reference_time=REFERENCE_TIME)
+        exchange.process_open_orders(reference_time=REFERENCE_TIME)
 
         halt = exchange.panic_halt()
         flattened = exchange.panic_flatten_positions()

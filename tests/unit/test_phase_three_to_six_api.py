@@ -1,6 +1,7 @@
 import unittest
 
 from apps.api.server import (
+    paper_process_payload,
     paper_preview_payload,
     paper_reset_payload,
     paper_submit_payload,
@@ -18,7 +19,7 @@ ORDER = {
     "side": "BUY",
     "book_side": "LONG",
     "quantity": "0.001",
-    "limit_price": "64999.9",
+    "limit_price": "65000.4",
 }
 
 
@@ -50,7 +51,20 @@ class PhaseThreeToSixApiTests(unittest.TestCase):
 
         self.assertEqual(payload["execution"], "paper_only")
         self.assertTrue(payload["paper_result"]["accepted"])
-        self.assertEqual(payload["paper_result"]["order"]["status"], "FILLED")
+        self.assertEqual(payload["paper_result"]["order"]["status"], "NEW")
+
+    def test_paper_process_advances_open_orders(self):
+        exchange = InMemoryPaperExchange()
+        paper_submit_payload(
+            ORDER,
+            config=RuntimeConfig(autonomy_stage=AutonomyStage.HUMAN_APPROVAL),
+            exchange=exchange,
+        )
+
+        payload = paper_process_payload({}, exchange=exchange)
+
+        self.assertEqual(payload["execution"], "paper_only")
+        self.assertEqual(payload["processed"][0]["status"], "FILLED")
 
     def test_paper_reset_returns_empty_portfolio(self):
         exchange = InMemoryPaperExchange()

@@ -253,6 +253,17 @@ const bindPaperForm = () => {
       renderPaperResult({ status: "error", reason: String(error) });
     }
   });
+  const process = document.getElementById("process-paper-orders");
+  if (process) {
+    process.addEventListener("click", async () => {
+      try {
+        renderPaperResult(await postJson("/paper/process", {}));
+        renderPaper(await fetchJson("/paper"));
+      } catch (error) {
+        renderPaperResult({ status: "error", reason: String(error) });
+      }
+    });
+  }
 };
 
 const bindStrategyControls = () => {
