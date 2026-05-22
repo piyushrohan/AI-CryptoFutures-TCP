@@ -87,18 +87,28 @@ class ResearchBacktestStrategyTests(unittest.TestCase):
             self.assertTrue(Path(tmp, "backtests", "latest_report.json").exists())
             self.assertTrue(Path(tmp, "backtests", "reports.jsonl").exists())
 
-    def test_strategy_session_defaults_to_no_trade(self):
+    def test_strategy_session_emits_paper_only_maker_recommendation(self):
         manager = StrategySessionManager()
         session = manager.start_session()
         recommendation = manager.recommendations()[0]
 
         self.assertEqual(session.status.value, "running")
-        self.assertEqual(recommendation.action, "NO_TRADE")
+        self.assertEqual(recommendation.action, "SUGGEST_MAKER_QUOTE")
         self.assertEqual(recommendation.maker_or_taker_permission, "maker_only")
         self.assertIn(
-            "strategy alpha is not implemented",
+            "not execution approval",
             recommendation.explanation,
         )
+        self.assertIn("risk", recommendation.risk_context)
+
+    def test_microstructure_scalp_session_is_recommendation_only(self):
+        manager = StrategySessionManager()
+        session = manager.start_session("microstructure_scalp")
+        recommendation = manager.recommendations()[0]
+
+        self.assertEqual(session.family, "microstructure_scalp")
+        self.assertTrue(recommendation.action.startswith("SUGGEST_"))
+        self.assertIn("not execution approval", recommendation.explanation)
 
     def test_strategy_session_pause_and_stop(self):
         manager = StrategySessionManager()
@@ -109,6 +119,7 @@ class ResearchBacktestStrategyTests(unittest.TestCase):
 
         self.assertEqual(paused.status.value, "paused")
         self.assertEqual(stopped.status.value, "stopped")
+        self.assertGreaterEqual(len(manager.sessions_payload()["audit_records"]), 3)
 
 
 if __name__ == "__main__":

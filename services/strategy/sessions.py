@@ -15,6 +15,10 @@ from enum import Enum
 
 from libs.schemas import FeePolicy, decimal_str, default_fee_policies
 from services.backtesting import run_microstructure_backtest
+from services.strategy.policies import (
+    maker_microstructure_policy,
+    microstructure_scalp_policy,
+)
 
 
 class StrategySessionStatus(str, Enum):
@@ -101,6 +105,7 @@ class StrategySessionManager:
         self._fee_policies = fee_policies or default_fee_policies()
         self._sessions: list[StrategySession] = []
         self._recommendations: list[StrategyRecommendation] = []
+        self._audit_records: list[dict[str, object]] = []
 
     def start_session(self, family: str = "maker_microstructure") -> StrategySession:
         now = datetime.now(UTC)
@@ -127,15 +132,22 @@ class StrategySessionManager:
             ),
         )
         self._sessions.append(session)
+        self._record_audit(session.session_id, "start", session.status.value)
         if fee_available:
-            self._recommendations.append(self._no_trade_recommendation(session, now))
+            self._recommendations.append(self._policy_recommendation(session, now))
         return session
 
     def pause_latest(self) -> StrategySession | None:
-        return self._update_latest(StrategySessionStatus.PAUSED)
+        session = self._update_latest(StrategySessionStatus.PAUSED)
+        if session:
+            self._record_audit(session.session_id, "pause", session.status.value)
+        return session
 
     def stop_latest(self) -> StrategySession | None:
-        return self._update_latest(StrategySessionStatus.STOPPED)
+        session = self._update_latest(StrategySessionStatus.STOPPED)
+        if session:
+            self._record_audit(session.session_id, "stop", session.status.value)
+        return session
 
     def sessions(self) -> tuple[StrategySession, ...]:
         return tuple(self._sessions)
@@ -155,6 +167,7 @@ class StrategySessionManager:
             "recommendations": [
                 item.to_public_dict() for item in self._recommendations
             ],
+            "audit_records": list(self._audit_records),
         }
 
     def recommendations_payload(self) -> dict[str, object]:
@@ -180,31 +193,44 @@ class StrategySessionManager:
         self._sessions[-1] = updated
         return updated
 
-    def _no_trade_recommendation(
+    def _policy_recommendation(
         self,
         session: StrategySession,
         created_at: datetime,
     ) -> StrategyRecommendation:
         report = run_microstructure_backtest()
+        policy = (
+            microstructure_scalp_policy()
+            if session.family == "microstructure_scalp"
+            else maker_microstructure_policy(report)
+        )
+        self._record_audit(session.session_id, "recommendation", policy.action)
         return StrategyRecommendation(
             recommendation_id=f"strategy-rec-{len(self._recommendations) + 1:06d}",
             session_id=session.session_id,
-            action="NO_TRADE",
-            symbol="SYN_ETHBTC",
+            action=policy.action,
+            symbol=policy.symbol,
             expected_edge_after_costs=report.expected_edge_after_costs,
-            confidence=Decimal("0"),
+            confidence=policy.confidence,
             maker_or_taker_permission="maker_only",
-            risk_context="paper session only; no order intent produced",
-            explanation=(
-                "No trade is emitted because this phase implements session "
-                "control and inspection only; strategy alpha is not implemented."
+            risk_context=(
+                "paper recommendation only; command, risk, portfolio, execution, "
+                "audit, and reconciliation approval still required"
             ),
-            rejected_alternatives=(
-                "direct ETHBTC execution remains disabled",
-                "taker behavior remains gated",
-                "model-driven orders are not implemented",
-            ),
+            explanation=policy.explanation,
+            rejected_alternatives=policy.rejected_alternatives,
             created_at=created_at,
+        )
+
+    def _record_audit(self, session_id: str, event: str, decision: str) -> None:
+        self._audit_records.append(
+            {
+                "session_id": session_id,
+                "event": event,
+                "decision": decision,
+                "created_at": datetime.now(UTC).isoformat(),
+                "scope": "paper_only",
+            }
         )
 
 

@@ -87,7 +87,7 @@ class PhaseThreeToSixApiTests(unittest.TestCase):
         stopped = strategy_stop_payload({}, manager=manager)
 
         self.assertEqual(started["session"]["status"], "running")
-        self.assertEqual(started["recommendations"][0]["action"], "NO_TRADE")
+        self.assertEqual(started["recommendations"][0]["action"], "SUGGEST_MAKER_QUOTE")
         self.assertEqual(paused["session"]["status"], "paused")
         self.assertEqual(stopped["session"]["status"], "stopped")
 
