@@ -313,7 +313,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
             AutonomyStage.HUMAN_APPROVAL,
             AutonomyStage.PAPER_AUTO,
         ),
-        notes="Cataloged for Phase 3; Phase 1 exposes validation only.",
+        execution_available=True,
+        notes="Paper sessions are local-only and do not connect to Binance.",
     ),
     _definition(
         CommandType.SUBMIT_PAPER_ORDER,
@@ -330,7 +331,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         ),
         trading_affecting=True,
         requires_fee_model=True,
-        notes="No paper fills exist in Phase 1.",
+        execution_available=True,
+        notes="Paper fills are deterministic local simulation only.",
     ),
     _definition(
         CommandType.RESET_PAPER_PORTFOLIO,
@@ -341,7 +343,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         required_operator_modes=(OperatorMode.PAPER,),
         required_venue_targets=(VenueTarget.INTERNAL_PAPER,),
         required_credential_scopes=(CredentialScope.NONE,),
-        notes="Cataloged only; paper state does not exist yet.",
+        execution_available=True,
+        notes="Resets deterministic local paper state only.",
     ),
     _definition(
         CommandType.CREATE_TESTNET_VALIDATION_SESSION,
@@ -448,8 +451,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         "preview costs, exposure, and expected edge",
         ServiceBoundary.API_GATEWAY,
         CommandEffect.VALIDATION_ONLY,
-        trading_affecting=True,
         requires_fee_model=True,
+        execution_available=True,
         notes="Preview requires a current fee model before it can be trusted.",
     ),
     _definition(
@@ -469,6 +472,7 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         ServiceBoundary.EXECUTION_ENGINE,
         CommandEffect.VALIDATION_ONLY,
         trading_affecting=True,
+        execution_available=True,
         notes="Cancel support requires execution and reconciliation state.",
     ),
     _definition(
@@ -511,7 +515,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         ServiceBoundary.BACKTEST_WORKER,
         CommandEffect.BACKGROUND_JOB,
         requires_fee_model=True,
-        notes="Backtest engine and cost model are later.",
+        execution_available=True,
+        notes="Deterministic local fixture backtest only.",
     ),
     _definition(
         CommandType.CREATE_STRATEGY_SESSION,
@@ -521,6 +526,7 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         CommandEffect.STRATEGY_SESSION,
         required_operator_modes=(OperatorMode.PAPER,),
         requires_fee_model=True,
+        execution_available=True,
         notes="No strategy session may run without current expected_edge_after_costs.",
     ),
     _definition(
@@ -529,7 +535,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         "pause strategy session",
         ServiceBoundary.STRATEGY_ENGINE,
         CommandEffect.STRATEGY_SESSION,
-        notes="Strategy session control is later.",
+        execution_available=True,
+        notes="Paper-only strategy session control.",
     ),
     _definition(
         CommandType.STOP_STRATEGY_SESSION,
@@ -537,7 +544,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         "stop strategy session",
         ServiceBoundary.STRATEGY_ENGINE,
         CommandEffect.STRATEGY_SESSION,
-        notes="Strategy session control is later.",
+        execution_available=True,
+        notes="Paper-only strategy session control.",
     ),
     _definition(
         CommandType.GET_STRATEGY_RECOMMENDATIONS,

@@ -9,19 +9,34 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 from libs.config import RuntimeConfig, load_runtime_config
-from libs.schemas import CommandRequest, control_surface_payload, symbol_universe_payload
+from libs.schemas import (
+    CommandRequest,
+    CommandType,
+    PaperOrderIntent,
+    control_surface_payload,
+    symbol_universe_payload,
+)
+from services.backtesting import backtest_report_payload
 from services.audit import InMemoryAuditRecorder
 from services.market_data import (
     account_state_payload,
     exchange_state_payload,
     fee_policy_payload,
+    replay_payload,
     symbol_metadata_payload,
 )
+from services.paper_exchange import InMemoryPaperExchange, default_paper_exchange
 from services.risk import evaluate_command, risk_status_payload
+from services.strategy import (
+    StrategySessionManager,
+    default_strategy_session_manager,
+)
 
 
 MAX_REQUEST_BYTES = 64_000
 _AUDIT_RECORDER = InMemoryAuditRecorder()
+_PAPER_EXCHANGE = default_paper_exchange()
+_STRATEGY_MANAGER = default_strategy_session_manager()
 
 
 def health_payload() -> dict[str, str]:
@@ -53,6 +68,23 @@ def audit_payload(recorder: InMemoryAuditRecorder | None = None) -> dict[str, An
     }
 
 
+def _audit_command_result(
+    request: CommandRequest,
+    result: Any,
+    runtime: RuntimeConfig,
+    recorder: InMemoryAuditRecorder,
+) -> dict[str, Any]:
+    decision = "accepted" if result.accepted else "rejected"
+    return recorder.record_decision(
+        command_type=request.command_type.value,
+        actor_id=request.actor_id,
+        decision=decision,
+        reasons=list(result.reasons),
+        payload=request.payload,
+        runtime=runtime.to_status(),
+    ).to_public_dict()
+
+
 def validate_command_payload(
     body: dict[str, Any],
     *,
@@ -63,21 +95,151 @@ def validate_command_payload(
     selected_recorder = recorder or _AUDIT_RECORDER
     request = CommandRequest.from_mapping(body)
     result = evaluate_command(runtime, request)
-    decision = "accepted" if result.accepted else "rejected"
-    record = selected_recorder.record_decision(
-        command_type=request.command_type.value,
-        actor_id=request.actor_id,
-        decision=decision,
-        reasons=list(result.reasons),
-        payload=request.payload,
-        runtime=runtime.to_status(),
-    )
+    record = _audit_command_result(request, result, runtime, selected_recorder)
     return {
         "status": "ok",
         "service": "api",
         "command": result.to_public_dict(),
-        "audit_record": record.to_public_dict(),
+        "audit_record": record,
         "execution": "not_performed",
+    }
+
+
+def _command_gate(
+    command_type: CommandType,
+    payload: dict[str, Any],
+    *,
+    config: RuntimeConfig | None = None,
+    recorder: InMemoryAuditRecorder | None = None,
+    fee_model_available: bool = True,
+) -> tuple[RuntimeConfig, dict[str, Any], bool]:
+    runtime = config or load_runtime_config()
+    selected_recorder = recorder or _AUDIT_RECORDER
+    request = CommandRequest(command_type, payload=payload)
+    result = evaluate_command(
+        runtime,
+        request,
+        fee_model_available=fee_model_available,
+    )
+    audit_record = _audit_command_result(
+        request,
+        result,
+        runtime,
+        selected_recorder,
+    )
+    return runtime, {
+        "command": result.to_public_dict(),
+        "audit_record": audit_record,
+    }, result.accepted
+
+
+def paper_preview_payload(
+    body: dict[str, Any],
+    *,
+    exchange: InMemoryPaperExchange | None = None,
+) -> dict[str, Any]:
+    selected_exchange = exchange or _PAPER_EXCHANGE
+    intent = PaperOrderIntent.from_mapping(body)
+    preview = selected_exchange.preview_order(intent)
+    return {
+        "status": "ok",
+        "service": "paper_exchange",
+        "preview": preview.to_public_dict(),
+        "execution": "paper_only",
+    }
+
+
+def paper_submit_payload(
+    body: dict[str, Any],
+    *,
+    config: RuntimeConfig | None = None,
+    exchange: InMemoryPaperExchange | None = None,
+    recorder: InMemoryAuditRecorder | None = None,
+) -> dict[str, Any]:
+    selected_exchange = exchange or _PAPER_EXCHANGE
+    _, gate, accepted = _command_gate(
+        CommandType.SUBMIT_PAPER_ORDER,
+        body,
+        config=config,
+        recorder=recorder,
+        fee_model_available=True,
+    )
+    if not accepted:
+        return {
+            "status": "ok",
+            "service": "paper_exchange",
+            **gate,
+            "paper_result": None,
+            "execution": "not_performed",
+        }
+    result = selected_exchange.submit_order(PaperOrderIntent.from_mapping(body))
+    return {
+        "status": "ok",
+        "service": "paper_exchange",
+        **gate,
+        "paper_result": result.to_public_dict(),
+        "execution": "paper_only",
+    }
+
+
+def paper_reset_payload(
+    body: dict[str, Any] | None = None,
+    *,
+    exchange: InMemoryPaperExchange | None = None,
+) -> dict[str, Any]:
+    selected_exchange = exchange or _PAPER_EXCHANGE
+    selected_exchange.reset()
+    return {
+        "status": "ok",
+        "service": "paper_exchange",
+        "reset": True,
+        "portfolio": selected_exchange.portfolio_payload(),
+    }
+
+
+def strategy_start_payload(
+    body: dict[str, Any] | None = None,
+    *,
+    manager: StrategySessionManager | None = None,
+) -> dict[str, Any]:
+    selected_manager = manager or _STRATEGY_MANAGER
+    family = (body or {}).get("family", "maker_microstructure")
+    session = selected_manager.start_session(str(family))
+    return {
+        "status": "ok",
+        "service": "strategy_sessions",
+        "session": session.to_public_dict(),
+        "recommendations": [
+            item.to_public_dict() for item in selected_manager.recommendations()
+        ],
+    }
+
+
+def strategy_pause_payload(
+    body: dict[str, Any] | None = None,
+    *,
+    manager: StrategySessionManager | None = None,
+) -> dict[str, Any]:
+    selected_manager = manager or _STRATEGY_MANAGER
+    session = selected_manager.pause_latest()
+    return {
+        "status": "ok",
+        "service": "strategy_sessions",
+        "session": session.to_public_dict() if session else None,
+    }
+
+
+def strategy_stop_payload(
+    body: dict[str, Any] | None = None,
+    *,
+    manager: StrategySessionManager | None = None,
+) -> dict[str, Any]:
+    selected_manager = manager or _STRATEGY_MANAGER
+    session = selected_manager.stop_latest()
+    return {
+        "status": "ok",
+        "service": "strategy_sessions",
+        "session": session.to_public_dict() if session else None,
     }
 
 
@@ -115,6 +277,33 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/audit/records":
             self._send_json(HTTPStatus.OK, audit_payload())
             return
+        if self.path == "/paper":
+            self._send_json(HTTPStatus.OK, _PAPER_EXCHANGE.summary_payload())
+            return
+        if self.path == "/paper/portfolio":
+            self._send_json(HTTPStatus.OK, _PAPER_EXCHANGE.portfolio_payload())
+            return
+        if self.path == "/paper/orders":
+            self._send_json(HTTPStatus.OK, _PAPER_EXCHANGE.orders_payload())
+            return
+        if self.path == "/paper/reconciliation":
+            self._send_json(HTTPStatus.OK, _PAPER_EXCHANGE.reconciliation_payload())
+            return
+        if self.path == "/research/features":
+            self._send_json(HTTPStatus.OK, replay_payload())
+            return
+        if self.path == "/backtests/report":
+            self._send_json(HTTPStatus.OK, backtest_report_payload())
+            return
+        if self.path == "/strategy/sessions":
+            self._send_json(HTTPStatus.OK, _STRATEGY_MANAGER.sessions_payload())
+            return
+        if self.path == "/strategy/recommendations":
+            self._send_json(
+                HTTPStatus.OK,
+                _STRATEGY_MANAGER.recommendations_payload(),
+            )
+            return
         self._send_json(
             HTTPStatus.NOT_FOUND,
             {
@@ -130,6 +319,14 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     "/fee-policy",
                     "/risk/status",
                     "/audit/records",
+                    "/paper",
+                    "/paper/portfolio",
+                    "/paper/orders",
+                    "/paper/reconciliation",
+                    "/research/features",
+                    "/backtests/report",
+                    "/strategy/sessions",
+                    "/strategy/recommendations",
                 ],
             },
         )
@@ -138,11 +335,49 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         if self.path == "/commands/validate":
             self._handle_command_validation()
             return
+        if self.path == "/paper/preview":
+            self._handle_json_payload(paper_preview_payload)
+            return
+        if self.path == "/paper/orders":
+            self._handle_json_payload(paper_submit_payload)
+            return
+        if self.path == "/paper/reset":
+            self._handle_json_payload(paper_reset_payload)
+            return
+        if self.path == "/paper/cancel":
+            self._handle_json_payload(
+                lambda payload: _PAPER_EXCHANGE.cancel_order(
+                    str(payload.get("order_id", ""))
+                )
+            )
+            return
+        if self.path == "/paper/panic/halt":
+            self._handle_json_payload(lambda payload: _PAPER_EXCHANGE.panic_halt())
+            return
+        if self.path == "/paper/panic/cancel":
+            self._handle_json_payload(
+                lambda payload: _PAPER_EXCHANGE.panic_cancel_open_orders()
+            )
+            return
+        if self.path == "/paper/panic/flatten":
+            self._handle_json_payload(
+                lambda payload: _PAPER_EXCHANGE.panic_flatten_positions()
+            )
+            return
+        if self.path == "/strategy/sessions/start":
+            self._handle_json_payload(strategy_start_payload)
+            return
+        if self.path == "/strategy/sessions/pause":
+            self._handle_json_payload(strategy_pause_payload)
+            return
+        if self.path == "/strategy/sessions/stop":
+            self._handle_json_payload(strategy_stop_payload)
+            return
         self._send_json(
             HTTPStatus.METHOD_NOT_ALLOWED,
             {
                 "status": "method_not_allowed",
-                "reason": "only validation endpoints exist; execution is not implemented",
+                "reason": "endpoint does not support this method",
             },
         )
 
@@ -156,6 +391,9 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
         return
 
     def _handle_command_validation(self) -> None:
+        self._handle_json_payload(validate_command_payload)
+
+    def _handle_json_payload(self, handler: Any) -> None:
         try:
             length = int(self.headers.get("Content-Length", "0"))
         except ValueError:
@@ -175,7 +413,7 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             payload = json.loads(body.decode("utf-8") if body else "{}")
             if not isinstance(payload, dict):
                 raise ValueError("request body must be a JSON object")
-            response = validate_command_payload(payload)
+            response = handler(payload)
         except (json.JSONDecodeError, ValueError) as exc:
             self._send_json(
                 HTTPStatus.BAD_REQUEST,
