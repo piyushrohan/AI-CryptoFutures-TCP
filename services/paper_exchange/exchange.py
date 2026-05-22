@@ -34,6 +34,7 @@ from libs.schemas import (
 )
 from services.portfolio import apply_paper_fill, portfolio_payload
 from services.execution import validate_maker_first_intent
+from services.paper_exchange.persistence import PaperExchangeStateStore
 from services.risk import PaperRiskResult, PaperRiskState, evaluate_paper_order_risk
 
 
@@ -162,12 +163,14 @@ class InMemoryPaperExchange:
         account_state: AccountState | None = None,
         *,
         taker_gate_enabled: bool = False,
+        state_store: PaperExchangeStateStore | None = None,
     ) -> None:
         self._account_state = account_state or default_account_state()
         self._orders: list[PaperOrder] = []
         self._reconciliation_events: list[ReconciliationEvent] = []
         self._taker_gate_enabled = taker_gate_enabled
         self._risk_state = PaperRiskState()
+        self._state_store = state_store
         self._halted = False
 
     def account_state(self) -> AccountState:
@@ -184,16 +187,19 @@ class InMemoryPaperExchange:
         self._orders.clear()
         self._reconciliation_events.clear()
         self._halted = False
+        self._persist_state()
 
     def panic_halt(self) -> dict[str, object]:
         self._halted = True
         self._risk_state = PaperRiskState(panic_halt_active=True)
-        return {
+        payload = {
             "status": "ok",
             "service": "paper_exchange",
             "panic_halt": True,
             "execution": "paper_only",
         }
+        self._persist_state()
+        return payload
 
     def panic_cancel_open_orders(self) -> dict[str, object]:
         event = ReconciliationEvent(
@@ -204,6 +210,7 @@ class InMemoryPaperExchange:
             created_at=now_utc(),
         )
         self._reconciliation_events.append(event)
+        self._persist_state()
         return {
             "status": "ok",
             "service": "paper_exchange",
@@ -222,6 +229,7 @@ class InMemoryPaperExchange:
             created_at=now_utc(),
         )
         self._reconciliation_events.append(event)
+        self._persist_state()
         return {
             "status": "ok",
             "service": "paper_exchange",
@@ -341,6 +349,7 @@ class InMemoryPaperExchange:
                 created_at=now,
             )
             self._reconciliation_events.append(event)
+            self._persist_state()
             return PaperSubmitResult(False, preview, None, event)
 
         quote = self.quote_for_symbol(intent.symbol, now)
@@ -363,6 +372,7 @@ class InMemoryPaperExchange:
                 created_at=now,
             )
             self._reconciliation_events.append(event)
+            self._persist_state()
             return PaperSubmitResult(False, preview, None, event, risk_result)
 
         fill_fee = preview.expected_edge.maker_fee
@@ -396,6 +406,7 @@ class InMemoryPaperExchange:
             created_at=now,
         )
         self._reconciliation_events.append(event)
+        self._persist_state()
         return PaperSubmitResult(True, preview, order, event, risk_result)
 
     def cancel_order(self, order_id: str) -> dict[str, object]:
@@ -409,6 +420,7 @@ class InMemoryPaperExchange:
                     created_at=now_utc(),
                 )
                 self._reconciliation_events.append(event)
+                self._persist_state()
                 return {
                     "status": "ok",
                     "service": "paper_exchange",
@@ -468,6 +480,14 @@ class InMemoryPaperExchange:
             ],
         }
 
+    def _persist_state(self) -> None:
+        if not self._state_store:
+            return
+        self._state_store.persist_orders(self.orders_payload())
+        self._state_store.persist_reconciliation(self.reconciliation_payload())
+        self._state_store.persist_portfolio(self.portfolio_payload())
+        self._state_store.persist_snapshot(self.summary_payload())
+
 
 def default_paper_exchange() -> InMemoryPaperExchange:
-    return InMemoryPaperExchange()
+    return InMemoryPaperExchange(state_store=PaperExchangeStateStore())

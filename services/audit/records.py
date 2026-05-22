@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Mapping
 
+from services.storage import JsonStateStore
+
 
 _SENSITIVE_KEY_FRAGMENTS = (
     "api_key",
@@ -111,3 +113,56 @@ class InMemoryAuditRecorder:
 
     def to_public_list(self) -> list[dict[str, Any]]:
         return [record.to_public_dict() for record in self._records]
+
+
+class FileBackedAuditRecorder(InMemoryAuditRecorder):
+    def __init__(
+        self,
+        store: JsonStateStore | None = None,
+        *,
+        jsonl_name: str = "audit/records.jsonl",
+    ) -> None:
+        super().__init__()
+        self._store = store or JsonStateStore()
+        self._jsonl_name = jsonl_name
+        for row in self._store.read_jsonl(self._jsonl_name):
+            self._records.append(
+                AuditRecord(
+                    record_id=str(row["record_id"]),
+                    command_type=str(row["command_type"]),
+                    actor_id=str(row["actor_id"]),
+                    decision=str(row["decision"]),
+                    reasons=tuple(str(item) for item in row.get("reasons", [])),
+                    payload_keys=tuple(
+                        str(item) for item in row.get("payload_keys", [])
+                    ),
+                    payload_fingerprint=str(row["payload_fingerprint"]),
+                    runtime=dict(row.get("runtime", {})),
+                    created_at=str(row["created_at"]),
+                )
+            )
+
+    def record_decision(
+        self,
+        *,
+        command_type: str,
+        actor_id: str,
+        decision: str,
+        reasons: list[str],
+        payload: Mapping[str, Any],
+        runtime: Mapping[str, Any],
+    ) -> AuditRecord:
+        record = super().record_decision(
+            command_type=command_type,
+            actor_id=actor_id,
+            decision=decision,
+            reasons=reasons,
+            payload=payload,
+            runtime=runtime,
+        )
+        self._store.append_jsonl(self._jsonl_name, record.to_public_dict())
+        self._store.write_json(
+            "audit/latest.json",
+            {"records": self.to_public_list()},
+        )
+        return record

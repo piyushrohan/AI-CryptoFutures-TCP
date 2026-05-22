@@ -17,7 +17,7 @@ from libs.schemas import (
     symbol_universe_payload,
 )
 from services.backtesting import backtest_report_payload
-from services.audit import InMemoryAuditRecorder
+from services.audit import FileBackedAuditRecorder, InMemoryAuditRecorder
 from services.market_data import (
     account_state_payload,
     exchange_state_payload,
@@ -34,7 +34,7 @@ from services.strategy import (
 
 
 MAX_REQUEST_BYTES = 64_000
-_AUDIT_RECORDER = InMemoryAuditRecorder()
+_AUDIT_RECORDER = FileBackedAuditRecorder()
 _PAPER_EXCHANGE = default_paper_exchange()
 _STRATEGY_MANAGER = default_strategy_session_manager()
 
