@@ -303,6 +303,11 @@ class PortfolioExposure:
     hedge_ratio: Decimal
     liquidation_buffer: Decimal
     funding_exposure: Decimal
+    sector_exposure: Decimal = Decimal("0")
+    correlated_exposure: Decimal = Decimal("0")
+    beta_exposure: Decimal = Decimal("0")
+    leg_imbalance: Decimal = Decimal("0")
+    cross_margin_buffer: Decimal = Decimal("0")
 
     def to_public_dict(self) -> dict[str, object]:
         return {
@@ -313,6 +318,11 @@ class PortfolioExposure:
             "hedge_ratio": decimal_str(self.hedge_ratio),
             "liquidation_buffer": decimal_str(self.liquidation_buffer),
             "funding_exposure": decimal_str(self.funding_exposure),
+            "sector_exposure": decimal_str(self.sector_exposure),
+            "correlated_exposure": decimal_str(self.correlated_exposure),
+            "beta_exposure": decimal_str(self.beta_exposure),
+            "leg_imbalance": decimal_str(self.leg_imbalance),
+            "cross_margin_buffer": decimal_str(self.cross_margin_buffer),
         }
 
 

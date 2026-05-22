@@ -17,6 +17,16 @@ from libs.schemas import (
 )
 
 
+_SECTOR_BY_SYMBOL = {
+    "BTCUSDC": "crypto_majors",
+    "ETHUSDC": "crypto_majors",
+}
+_BETA_BY_SYMBOL = {
+    "BTCUSDC": Decimal("1"),
+    "ETHUSDC": Decimal("0.75"),
+}
+
+
 def _book_is_increase(fill: PaperFill) -> bool:
     return (
         fill.side == OrderSide.BUY
@@ -113,6 +123,18 @@ def calculate_portfolio_exposure(account_state: AccountState) -> PortfolioExposu
         else Decimal("0")
     )
     liquidation_buffer = collateral * account_state.liquidation_distance_ratio
+    sector_exposure = sum(
+        book.notional
+        for book in account_state.position_books
+        if _SECTOR_BY_SYMBOL.get(book.symbol) == "crypto_majors"
+    )
+    beta_exposure = sum(
+        book.notional * _BETA_BY_SYMBOL.get(book.symbol, Decimal("1"))
+        * (Decimal("1") if book.side == BookSide.LONG else Decimal("-1"))
+        for book in account_state.position_books
+    )
+    correlated_exposure = abs(beta_exposure)
+    leg_imbalance = abs(long_exposure - short_exposure)
     return PortfolioExposure(
         gross_exposure=gross_exposure,
         net_exposure=net_exposure,
@@ -121,6 +143,11 @@ def calculate_portfolio_exposure(account_state: AccountState) -> PortfolioExposu
         hedge_ratio=hedge_ratio,
         liquidation_buffer=liquidation_buffer,
         funding_exposure=account_state.funding_exposure,
+        sector_exposure=sector_exposure,
+        correlated_exposure=correlated_exposure,
+        beta_exposure=beta_exposure,
+        leg_imbalance=leg_imbalance,
+        cross_margin_buffer=liquidation_buffer - account_state.maintenance_margin,
     )
 
 
@@ -152,6 +179,14 @@ def portfolio_payload(account_state: AccountState) -> dict[str, object]:
         "status": "ok",
         "service": "portfolio",
         "exposure": exposure.to_public_dict(),
+        "sector_exposure": {
+            "crypto_majors": decimal_str(exposure.sector_exposure),
+        },
+        "correlation_model": {
+            "source": "local_static_phase_1_6_hardening",
+            "btc_beta": "1",
+            "eth_beta": "0.75",
+        },
         "symbol_exposure": symbol_exposure,
         "position_books": [
             book.to_public_dict() for book in account_state.position_books

@@ -12,6 +12,7 @@ from libs.schemas import (
 )
 from libs.config import AutonomyStage, RuntimeConfig
 from services.paper_exchange import InMemoryPaperExchange
+from services.portfolio import calculate_portfolio_exposure
 from services.risk import PaperRiskState, RiskLimits, evaluate_paper_order_risk
 
 
@@ -198,6 +199,71 @@ class PaperTradingTests(unittest.TestCase):
 
         self.assertFalse(result.accepted)
         self.assertIn("max symbol exposure would be exceeded", result.reasons)
+
+    def test_portfolio_exposure_includes_beta_sector_and_leg_imbalance(self):
+        exchange = InMemoryPaperExchange()
+        exchange.submit_order(btc_buy_long(), reference_time=REFERENCE_TIME)
+        exchange.process_open_orders(reference_time=REFERENCE_TIME)
+
+        exposure = calculate_portfolio_exposure(exchange.account_state())
+
+        self.assertEqual(exposure.sector_exposure, Decimal("65.0004"))
+        self.assertEqual(exposure.correlated_exposure, Decimal("65.0004"))
+        self.assertEqual(exposure.beta_exposure, Decimal("65.0004"))
+        self.assertEqual(exposure.leg_imbalance, Decimal("65.0004"))
+
+    def test_sector_correlation_beta_and_leg_limits_veto_order(self):
+        exchange = InMemoryPaperExchange()
+        intent = btc_buy_long()
+        preview = exchange.preview_order(intent, reference_time=REFERENCE_TIME)
+        quote = exchange.quote_for_symbol("BTCUSDC", REFERENCE_TIME)
+
+        result = evaluate_paper_order_risk(
+            exchange.account_state(),
+            intent,
+            preview,
+            quote,
+            limits=RiskLimits(
+                max_sector_exposure=Decimal("10"),
+                max_correlated_exposure=Decimal("10"),
+                max_beta_exposure=Decimal("10"),
+                max_leg_imbalance=Decimal("10"),
+            ),
+            reference_time=REFERENCE_TIME,
+        )
+
+        self.assertFalse(result.accepted)
+        self.assertIn("max sector exposure would be exceeded", result.reasons)
+        self.assertIn("max correlated exposure would be exceeded", result.reasons)
+        self.assertIn("max beta exposure would be exceeded", result.reasons)
+        self.assertIn("max leg imbalance would be exceeded", result.reasons)
+
+    def test_kill_switch_states_veto_orders(self):
+        exchange = InMemoryPaperExchange()
+        intent = btc_buy_long()
+        preview = exchange.preview_order(intent, reference_time=REFERENCE_TIME)
+        quote = exchange.quote_for_symbol("BTCUSDC", REFERENCE_TIME)
+
+        result = evaluate_paper_order_risk(
+            exchange.account_state(),
+            intent,
+            preview,
+            quote,
+            state=PaperRiskState(
+                daily_loss=Decimal("1000"),
+                drawdown=Decimal("1500"),
+                open_order_count_last_minute=10,
+                api_error_active=True,
+                panic_halt_active=True,
+            ),
+            reference_time=REFERENCE_TIME,
+        )
+
+        self.assertIn("panic halt is active", result.reasons)
+        self.assertIn("API error kill switch is active", result.reasons)
+        self.assertIn("max daily loss limit reached", result.reasons)
+        self.assertIn("max drawdown limit reached", result.reasons)
+        self.assertIn("order spam protection limit reached", result.reasons)
 
     def test_panic_halt_and_flatten_are_paper_only(self):
         exchange = InMemoryPaperExchange()
