@@ -71,6 +71,7 @@ Binance-specific implementation must follow [docs/binance/binance_usdm_constrain
 - Add tests for maker-first execution and taker leakage gates.
 - Prefer deterministic tests.
 - Make sure to get over 98% test coverage for implemented code.
+- Use the repository `coverage.py` gate when changing implemented code; do not weaken the coverage threshold to make a PR pass.
 - Do not connect to Binance in unit tests.
 - Add regression tests for rejected commands, vetoes, stale data handling, panic controls, and unsafe mode transitions.
 
@@ -107,6 +108,7 @@ Use [docs/code_review.md](docs/code_review.md) for the full review checklist and
 - Small, reviewable changes.
 - Strong typing.
 - Clear boundaries.
+- Targeted comments and docstrings around safety-critical or non-obvious behavior.
 - No hidden side effects.
 - No silent defaults for dangerous behavior.
 - Prefer explicit config over magic behavior.

@@ -1,4 +1,4 @@
-.PHONY: help bootstrap-check check ci compose-check docs-check lint secret-scan test tree up api
+.PHONY: help bootstrap-check check ci compose-check coverage docs-check lint secret-scan test tree up api
 
 help:
 	@printf "AI-CryptoFutures-TCP development targets\n"
@@ -7,11 +7,12 @@ help:
 	@printf "  make ci     - run CI-equivalent local checks\n"
 	@printf "  make lint   - run syntax checks\n"
 	@printf "  make test   - run unit tests\n"
+	@printf "  make coverage - run unit tests with >=98%% coverage\n"
 	@printf "  make up     - start the local development stack\n"
 	@printf "  make api    - start the API locally without compose\n"
 	@printf "  make tree   - print the tracked skeleton tree\n"
 
-check: test compose-check docs-check bootstrap-check secret-scan
+check: coverage compose-check docs-check bootstrap-check secret-scan
 	@test -f README.md
 	@test -f AGENTS.md
 	@test -f .env.example
@@ -26,6 +27,10 @@ lint:
 test:
 	@python3 -m unittest discover -s tests/unit
 
+coverage:
+	@python3 -m coverage run -m unittest discover -s tests/unit
+	@python3 -m coverage report --fail-under=98
+
 compose-check:
 	@docker compose config >/dev/null
 
@@ -33,6 +38,7 @@ docs-check:
 	@test -f docs/roadmap/developer_roadmap.md
 	@test -f docs/architecture/frontend_control_surface.md
 	@test -f docs/architecture/system_design.md
+	@test -f docs/roadmap/phase_7_9_implementation_status.md
 	@test -f docs/market_data/three_asset_universe.md
 	@test -f docs/code_review.md
 	@test -f configs/symbol_universe.yml

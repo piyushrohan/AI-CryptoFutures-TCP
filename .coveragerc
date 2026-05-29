@@ -1,0 +1,14 @@
+[run]
+branch = True
+source =
+    apps
+    libs
+    services
+
+[report]
+fail_under = 98
+show_missing = True
+skip_covered = True
+exclude_also =
+    if __name__ == .__main__.:
+    def run\(
