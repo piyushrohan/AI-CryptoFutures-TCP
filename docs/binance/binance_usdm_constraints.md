@@ -2,7 +2,7 @@
 
 AI-CryptoFutures-TCP initially targets Binance USDⓈ-M Futures. This document captures venue assumptions that future connector, execution, risk, portfolio, and test code must respect.
 
-This is documentation only. Do not implement connector code here.
+This document is primarily a design contract. The current Phase 8 code adds a validation-only backend boundary that models request and order-payload shapes from these constraints. It does not perform network calls, request signing, testnet order submission, or live trading.
 
 ## Source of Truth
 
@@ -128,6 +128,8 @@ The execution engine must tolerate delayed events, duplicate events, missed webs
 Testnet and live credentials, base URLs, streams, symbol metadata, balances, positions, orders, and audit records must remain clearly separated.
 
 Passing testnet checks is required before live consideration, but it is not live-trading approval.
+
+The current validation lane may inspect local runtime gates and produce Binance-shaped payload previews for tests. It must remain clearly labeled as validation-only until authenticated backend signing, user data stream reconciliation, and exchange error handling are implemented and reviewed.
 
 ## Close-intent Translation
 

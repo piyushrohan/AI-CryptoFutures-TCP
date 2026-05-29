@@ -78,10 +78,19 @@ The API exposes read-only safety and Phase 2 truth-model endpoints plus command 
 - `GET /fee-policy`
 - `GET /risk/status`
 - `GET /audit/records`
+- `GET /models/registry`
+- `GET /models/features`
+- `GET /models/evaluations`
+- `GET /models/decisions`
+- `GET /binance/testnet/validation`
+- `GET /live/readonly`
 - `POST /commands/validate`
+- `POST /models/recommendation-preview`
+- `POST /binance/testnet/order/validate`
+- `POST /live/orders`
 
-`POST /commands/validate` records an audit decision and performs no execution. Trading-affecting commands are rejected in `observe_only`, strategy/session commands require a future current fee model, and live trading remains fail-closed.
+`POST /commands/validate` records an audit decision and performs no execution. Trading-affecting commands are rejected in `observe_only`, strategy/session commands require a current fee model, and live trading remains fail-closed. Testnet order validation builds Binance-shaped payloads only; it does not sign or submit orders. `POST /live/orders` is an explicit fail-closed rejection in this phase.
 
 ## Development Status
 
-Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Phase 2 adds deterministic local/mock account state, symbol metadata, fee policy, freshness checks, and read-only inspectors. Paper fills, Binance connectivity, strategy sessions, model recommendations, and live trading are not implemented.
+Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Phase 2 adds deterministic local/mock account state, symbol metadata, fee policy, freshness checks, and read-only inspectors. Phases 3 through 6 add deterministic local paper trading, portfolio/risk hardening, synthetic microstructure replay/backtests, and paper-only strategy sessions. Phases 7 through 9 add local model decision records, validation-only Binance USDⓈ-M Futures testnet lane scaffolding, and gated `LIVE` read-only projection. Real Binance connectivity, request signing, testnet order submission, model-driven execution, and live trading are not implemented.

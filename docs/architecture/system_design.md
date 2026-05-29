@@ -211,17 +211,23 @@ It must support future multi-symbol portfolio management, cross-margin-aware exp
 
 Phase 2 account-state scaffolding uses independent `LONG` and `SHORT` books for `BTCUSDC` and `ETHUSDC` in hedge mode, even when quantities are zero. Portfolio Margin remains research-only and unavailable as an implemented margin mode.
 
+Phase 9 implements a gated `LIVE` read-only projection with redacted credential metadata and audit-only reconciliation. It does not submit, cancel, or replace orders.
+
 ### execution engine
 
 The execution engine translates approved internal order intents into venue-specific requests, submits them to the selected venue, tracks order state, and reconciles responses.
 
 It must not silently change order aggressiveness, introduce taker orders, alter hedge side, or bypass risk and portfolio approvals. Execution should be maker-first by default; taker behavior must be explicit, gated, tested, and audited. See [Maker Microstructure Execution](../execution/maker_microstructure_execution.md).
 
+Phase 8 implements a backend-only Binance USDⓈ-M Futures validation boundary that builds request and order-payload shapes for review and tests only. It performs no network calls, no request signing, and no order submission.
+
 ### model service
 
 The model service serves approved model versions, produces predictions or recommendations, and writes model decision records.
 
 It must expose explanations, feature versions, model versions, confidence, constraints, expected edge after costs, and the reason for any proposed action or non-action. It must never directly call the exchange connector.
+
+Phase 7 implements local governance metadata, feature-version records, evaluation summaries, decision records, and recommendation previews. A recommendation without a complete `ModelDecisionRecord` is rejected before it can be considered for order-intent review.
 
 ### training worker
 
