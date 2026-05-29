@@ -68,7 +68,11 @@ class CommandType(_StrEnum):
     REQUEST_MODEL_DEPLOYMENT = "request_model_deployment"
     APPROVE_MODEL_STAGE = "approve_model_stage"
     DISABLE_MODEL_VERSION = "disable_model_version"
+    GET_MODEL_REGISTRY = "get_model_registry"
+    GET_FEATURE_REGISTRY = "get_feature_registry"
+    GET_MODEL_EVALUATIONS = "get_model_evaluations"
     GET_MODEL_DECISION_RECORD = "get_model_decision_record"
+    PREVIEW_MODEL_RECOMMENDATION = "preview_model_recommendation"
     ACTIVATE_PANIC_HALT = "activate_panic_halt"
     PANIC_CANCEL_OPEN_ORDERS = "panic_cancel_open_orders"
     PANIC_FLATTEN_POSITIONS = "panic_flatten_positions"
@@ -356,7 +360,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         required_venue_targets=(VenueTarget.BINANCE_TESTNET,),
         required_credential_scopes=(CredentialScope.TRADING,),
         required_autonomy_stages=(AutonomyStage.TESTNET_AUTO,),
-        notes="Binance testnet is an internal lane, not a top-level mode.",
+        execution_available=True,
+        notes="Binance testnet is an internal validation lane, not a top-level mode.",
     ),
     _definition(
         CommandType.SUBMIT_TESTNET_ORDER,
@@ -370,7 +375,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         required_autonomy_stages=(AutonomyStage.TESTNET_AUTO,),
         trading_affecting=True,
         requires_fee_model=True,
-        notes="No Binance connector or signing path exists in Phase 1.",
+        execution_available=True,
+        notes="Phase 8 validates Binance-shaped payloads only; no submission occurs.",
     ),
     _definition(
         CommandType.GET_LIVE_READONLY_ACCOUNT,
@@ -382,7 +388,8 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         required_venue_targets=(VenueTarget.BINANCE_LIVE,),
         required_credential_scopes=(CredentialScope.READ_ONLY,),
         required_trading_gates=(TradingGate.LOCKED,),
-        notes="Live read-only is a later capability.",
+        execution_available=True,
+        notes="LIVE read-only inspection only; no order submission is allowed.",
     ),
     _definition(
         CommandType.REQUEST_LIVE_APPROVAL,
@@ -582,13 +589,50 @@ _COMMAND_DEFINITIONS: tuple[CommandDefinition, ...] = (
         notes="Disable path is cataloged before model registry exists.",
     ),
     _definition(
+        CommandType.GET_MODEL_REGISTRY,
+        "Model registry",
+        "inspect registered model metadata and approval states",
+        ServiceBoundary.MODEL_SERVICE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+        notes="Registry metadata is local and cannot grant execution permission.",
+    ),
+    _definition(
+        CommandType.GET_FEATURE_REGISTRY,
+        "Model registry",
+        "inspect feature versions used by model decisions",
+        ServiceBoundary.MODEL_SERVICE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+        notes="Feature versioning supports transparent model decision records.",
+    ),
+    _definition(
+        CommandType.GET_MODEL_EVALUATIONS,
+        "Evaluation",
+        "inspect model evaluation summaries",
+        ServiceBoundary.MODEL_SERVICE,
+        CommandEffect.READ_ONLY,
+        execution_available=True,
+        notes="Evaluation results do not bypass risk or live gates.",
+    ),
+    _definition(
         CommandType.GET_MODEL_DECISION_RECORD,
         "Model decision inspector",
         "inspect model decision record",
         ServiceBoundary.MODEL_SERVICE,
         CommandEffect.READ_ONLY,
         execution_available=True,
-        notes="Read-only placeholder; no model decisions exist yet.",
+        notes="Every model recommendation needs this record before order-intent review.",
+    ),
+    _definition(
+        CommandType.PREVIEW_MODEL_RECOMMENDATION,
+        "Model decision inspector",
+        "preview whether a model recommendation has a complete decision record",
+        ServiceBoundary.MODEL_SERVICE,
+        CommandEffect.MODEL_GOVERNANCE,
+        requires_fee_model=True,
+        execution_available=True,
+        notes="Accepted preview is not execution approval.",
     ),
     _definition(
         CommandType.ACTIVATE_PANIC_HALT,
