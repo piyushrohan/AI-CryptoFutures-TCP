@@ -1,12 +1,20 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
-from services.backtesting import backtest_report_payload, run_microstructure_backtest
+from services.backtesting import (
+    backtest_report_payload,
+    persist_backtest_report,
+    run_microstructure_backtest,
+)
 from services.market_data import (
     derive_synthetic_ethbtc,
     generate_microstructure_features,
+    load_replay_file,
     replay_payload,
     synthetic_market_depth_fixtures,
 )
+from services.storage import JsonStateStore
 from services.strategy import StrategySessionManager
 
 
@@ -49,18 +57,58 @@ class ResearchBacktestStrategyTests(unittest.TestCase):
         self.assertIn("expected_edge_after_costs", payload["report"])
         self.assertEqual(payload["report"]["approval_state"], "research_only")
 
-    def test_strategy_session_defaults_to_no_trade(self):
+    def test_local_csv_replay_file_can_drive_backtest(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp, "replay.csv")
+            path.write_text(
+                "\n".join(
+                    [
+                        "symbol,timestamp,receive_timestamp,bid,ask,bid_size,ask_size,buy_trade_qty,sell_trade_qty,funding_rate_bps,open_interest,liquidation_notional,latency_ms",
+                        "BTCUSDC,2026-01-01T12:00:00+00:00,2026-01-01T12:00:00.010000+00:00,65000,65000.5,4,3,1,0.5,0.8,100,0,10",
+                        "ETHUSDC,2026-01-01T12:00:00+00:00,2026-01-01T12:00:00.011000+00:00,3200,3200.05,80,75,10,5,0.6,200,0,11",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            snapshots = load_replay_file(path)
+            report = run_microstructure_backtest(snapshots)
+
+            self.assertEqual(len(snapshots), 2)
+            self.assertEqual(report.fixture_source, "local_replay_file")
+            self.assertEqual(report.observation_count, 2)
+
+    def test_backtest_report_can_persist_locally(self):
+        with TemporaryDirectory() as tmp:
+            report = run_microstructure_backtest()
+
+            persist_backtest_report(report, JsonStateStore(tmp))
+
+            self.assertTrue(Path(tmp, "backtests", "latest_report.json").exists())
+            self.assertTrue(Path(tmp, "backtests", "reports.jsonl").exists())
+
+    def test_strategy_session_emits_paper_only_maker_recommendation(self):
         manager = StrategySessionManager()
         session = manager.start_session()
         recommendation = manager.recommendations()[0]
 
         self.assertEqual(session.status.value, "running")
-        self.assertEqual(recommendation.action, "NO_TRADE")
+        self.assertEqual(recommendation.action, "SUGGEST_MAKER_QUOTE")
         self.assertEqual(recommendation.maker_or_taker_permission, "maker_only")
         self.assertIn(
-            "strategy alpha is not implemented",
+            "not execution approval",
             recommendation.explanation,
         )
+        self.assertIn("risk", recommendation.risk_context)
+
+    def test_microstructure_scalp_session_is_recommendation_only(self):
+        manager = StrategySessionManager()
+        session = manager.start_session("microstructure_scalp")
+        recommendation = manager.recommendations()[0]
+
+        self.assertEqual(session.family, "microstructure_scalp")
+        self.assertTrue(recommendation.action.startswith("SUGGEST_"))
+        self.assertIn("not execution approval", recommendation.explanation)
 
     def test_strategy_session_pause_and_stop(self):
         manager = StrategySessionManager()
@@ -71,6 +119,7 @@ class ResearchBacktestStrategyTests(unittest.TestCase):
 
         self.assertEqual(paused.status.value, "paused")
         self.assertEqual(stopped.status.value, "stopped")
+        self.assertGreaterEqual(len(manager.sessions_payload()["audit_records"]), 3)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
-.PHONY: help check ci compose-check docs-check lint secret-scan test tree up api
+.PHONY: help bootstrap-check check ci compose-check docs-check lint secret-scan test tree up api
 
 help:
 	@printf "AI-CryptoFutures-TCP development targets\n"
 	@printf "  make check  - run basic repository skeleton checks\n"
+	@printf "  make bootstrap-check - verify safe local bootstrap defaults\n"
 	@printf "  make ci     - run CI-equivalent local checks\n"
 	@printf "  make lint   - run syntax checks\n"
 	@printf "  make test   - run unit tests\n"
@@ -10,7 +11,7 @@ help:
 	@printf "  make api    - start the API locally without compose\n"
 	@printf "  make tree   - print the tracked skeleton tree\n"
 
-check: test compose-check docs-check secret-scan
+check: test compose-check docs-check bootstrap-check secret-scan
 	@test -f README.md
 	@test -f AGENTS.md
 	@test -f .env.example
@@ -35,6 +36,9 @@ docs-check:
 	@test -f docs/market_data/three_asset_universe.md
 	@test -f docs/code_review.md
 	@test -f configs/symbol_universe.yml
+
+bootstrap-check:
+	@python3 -c "from apps.api.server import status_payload; p=status_payload(); r=p['runtime']; assert r['operator_mode']=='paper'; assert r['venue_target']=='internal_paper'; assert r['credential_scope']=='none'; assert r['trading_gate']=='locked'; assert r['autonomy_stage']=='observe_only'; assert r['live_trading_enabled'] is False; assert r['binance_credentials_required'] is False; assert p['placeholders']['frontend']=='expected'; assert p['placeholders']['api']=='running'; assert p['placeholders']['database']=='expected'; assert p['placeholders']['redis']=='expected'; assert p['placeholders']['monitoring']=='expected'"
 
 # Baseline guardrail: catch common committed token/key formats during local checks.
 secret-scan:

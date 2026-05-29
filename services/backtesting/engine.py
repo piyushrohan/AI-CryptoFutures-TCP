@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from libs.schemas import decimal_str, default_fee_policies
-from services.market_data import generate_microstructure_features
+from services.market_data import MarketDepthSnapshot, generate_microstructure_features
+from services.storage import JsonStateStore
 
 
 @dataclass(frozen=True)
@@ -54,8 +55,12 @@ class BacktestReport:
         }
 
 
-def run_microstructure_backtest() -> BacktestReport:
-    features = generate_microstructure_features()
+def run_microstructure_backtest(
+    snapshots: tuple[MarketDepthSnapshot, ...] | None = None,
+    *,
+    run_id: str = "synthetic-microstructure-backtest-001",
+) -> BacktestReport:
+    features = generate_microstructure_features(snapshots)
     quote_count = len(features)
     simulated_fill_count = sum(
         1
@@ -89,8 +94,10 @@ def run_microstructure_backtest() -> BacktestReport:
     gross_edge = Decimal(simulated_fill_count) * Decimal("0.9")
     expected_edge_after_costs = gross_edge - fees_paid - adverse_selection_cost
     return BacktestReport(
-        run_id="synthetic-microstructure-backtest-001",
-        fixture_source="synthetic_in_repo_fixture",
+        run_id=run_id,
+        fixture_source=(
+            "local_replay_file" if snapshots is not None else "synthetic_in_repo_fixture"
+        ),
         observation_count=len(features),
         quote_count=quote_count,
         simulated_fill_count=simulated_fill_count,
@@ -107,9 +114,26 @@ def run_microstructure_backtest() -> BacktestReport:
     )
 
 
-def backtest_report_payload() -> dict[str, object]:
+def persist_backtest_report(
+    report: BacktestReport,
+    store: JsonStateStore | None = None,
+) -> None:
+    selected_store = store or JsonStateStore()
+    payload = report.to_public_dict()
+    selected_store.write_json("backtests/latest_report.json", payload)
+    selected_store.append_jsonl("backtests/reports.jsonl", payload)
+
+
+def backtest_report_payload(
+    snapshots: tuple[MarketDepthSnapshot, ...] | None = None,
+    *,
+    persist: bool = True,
+) -> dict[str, object]:
+    report = run_microstructure_backtest(snapshots)
+    if persist:
+        persist_backtest_report(report)
     return {
         "status": "ok",
         "service": "backtesting",
-        "report": run_microstructure_backtest().to_public_dict(),
+        "report": report.to_public_dict(),
     }

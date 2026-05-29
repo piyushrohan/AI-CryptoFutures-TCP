@@ -39,6 +39,7 @@ secrets/
 *.db
 *.sqlite
 *.sqlite3
+.local_state/
 postgres-data/
 redis-data/
 

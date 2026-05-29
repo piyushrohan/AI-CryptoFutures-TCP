@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from libs.schemas import AccountState, default_account_state
+from services.storage import JsonStateStore
 
 
 class InMemoryExchangeStateStore:
@@ -25,6 +26,36 @@ class InMemoryExchangeStateStore:
 
     def snapshots(self) -> tuple[AccountState, ...]:
         return tuple(self._snapshots)
+
+
+class FileBackedExchangeStateStore(InMemoryExchangeStateStore):
+    def __init__(
+        self,
+        seed: AccountState | None = None,
+        store: JsonStateStore | None = None,
+    ) -> None:
+        super().__init__(seed)
+        self._store = store or JsonStateStore()
+        self._persist_latest()
+
+    def append(self, snapshot: AccountState) -> None:
+        super().append(snapshot)
+        self._persist_latest()
+
+    def _persist_latest(self) -> None:
+        now = datetime.now(UTC)
+        latest = self.latest().to_public_dict(now)
+        self._store.write_json("exchange/latest_account_state.json", latest)
+        self._store.append_jsonl(
+            "exchange/account_state_snapshots.jsonl",
+            {
+                "account_id": latest["account_id"],
+                "venue_target": latest["venue_target"],
+                "freshness": latest["freshness"],
+                "is_valid": latest["is_valid"],
+                "validation_errors": latest["validation_errors"],
+            },
+        )
 
 
 def _reference_time(reference_time: datetime | None = None) -> datetime:

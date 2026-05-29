@@ -20,8 +20,13 @@ Implemented:
 - Independent hedge-mode `LONG` and `SHORT` book updates.
 - Paper reset, cancel record, panic halt, panic cancel, and panic flatten
   scaffolding.
+- Local JSON persistence for paper orders, portfolio state, reconciliation
+  events, and latest paper snapshots.
+- Deterministic resting, partial-fill, fill, cancel, and expire lifecycle
+  states.
+- Maker queue approximation for paper order processing.
 - API endpoints for paper preview, submit, portfolio, orders, reconciliation,
-  reset, and paper panic actions.
+  reset, process, expire, and paper panic actions.
 - Frontend paper control surface for preview, submit, exposure, and result
   inspection.
 
@@ -29,7 +34,7 @@ Still out of scope:
 
 - Binance testnet or live exchange submission.
 - Production matching engine behavior.
-- Persistent paper portfolio storage.
+- Venue-grade order book matching.
 
 ## Phase 4: Portfolio and Risk Foundation
 
@@ -38,10 +43,13 @@ Implemented:
 - Portfolio exposure calculations for gross exposure, net exposure, long
   exposure, short exposure, hedge ratio, liquidation buffer, and funding
   exposure.
+- Sector exposure, correlated exposure, beta exposure, leg imbalance, and
+  cross-margin-buffer calculations for paper risk decisions.
 - Paper risk gates for max account leverage, max symbol exposure, max portfolio
-  gross exposure, daily loss, drawdown, liquidation buffer, stale data, API
-  error halt, abnormal spread, funding spike, volatility halt, order spam
-  protection, and panic halt.
+  gross exposure, max sector exposure, max correlated exposure, max beta
+  exposure, max leg imbalance, daily loss, drawdown, liquidation buffer, stale
+  data, API error halt, abnormal spread, funding spike, volatility halt, order
+  spam protection, and panic halt.
 - Risk checks remain independent from strategy logic.
 - Missing stale or unsafe inputs veto paper order submission.
 
@@ -56,6 +64,7 @@ Still out of scope:
 Implemented:
 
 - Synthetic in-repo BTCUSDC and ETHUSDC market-depth fixtures.
+- Local CSV or JSON replay-file loading for BTCUSDC and ETHUSDC snapshots.
 - `SYN_ETHBTC` derivation from `ETHUSDC / BTCUSDC`.
 - Feature generation for order book imbalance, microprice, spread, depth slope,
   queue imbalance, trade aggression, short-horizon returns, realized
@@ -64,6 +73,7 @@ Implemented:
 - Deterministic local backtest report with maker/taker ratio, fill ratio,
   fees, adverse-selection estimate, missed fills, latency, and
   `expected_edge_after_costs`.
+- Local persistence for latest and historical backtest reports.
 - API and frontend inspection surfaces for research features and backtest
   report.
 
@@ -71,7 +81,7 @@ Still out of scope:
 
 - Downloaded market data.
 - Direct ETHBTC executable trading.
-- Historical production replay infrastructure.
+- Downloaded historical production replay infrastructure.
 
 ## Phase 6: Strategy Sessions in Paper Mode
 
@@ -79,14 +89,15 @@ Implemented:
 
 - Paper-only strategy session manager.
 - Start, pause, stop, status, and recommendation inspection.
-- Maker-first microstructure session family scaffold.
-- No-trade recommendation records by default.
+- Deterministic maker-first recommendation policies for maker microstructure
+  and microstructure scalp sessions.
+- Recommendation records remain paper-only and do not directly create orders.
 - Session-level maker/taker leakage metric.
-- Explicit notes that strategy alpha is not implemented.
+- Session-level audit records for start, pause, stop, and recommendations.
 
 Still out of scope:
 
-- Real alpha strategy logic.
+- Production alpha strategy logic.
 - AI/model-driven order intents.
 - Any direct strategy access to exchange connectors.
 - Testnet auto-trade or live trading.

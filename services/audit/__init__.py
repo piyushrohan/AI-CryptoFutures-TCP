@@ -1,5 +1,13 @@
-"""Audit service scaffolding."""
+"""Audit services."""
 
-from services.audit.records import AuditRecord, InMemoryAuditRecorder
+from services.audit.records import (
+    AuditRecord,
+    FileBackedAuditRecorder,
+    InMemoryAuditRecorder,
+)
 
-__all__ = ["AuditRecord", "InMemoryAuditRecorder"]
+__all__ = [
+    "AuditRecord",
+    "FileBackedAuditRecorder",
+    "InMemoryAuditRecorder",
+]

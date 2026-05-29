@@ -21,6 +21,10 @@ from services.portfolio import calculate_portfolio_exposure
 class RiskLimits:
     max_account_leverage: Decimal = Decimal("3")
     max_symbol_exposure: Decimal = Decimal("50000")
+    max_sector_exposure: Decimal = Decimal("75000")
+    max_correlated_exposure: Decimal = Decimal("60000")
+    max_beta_exposure: Decimal = Decimal("60000")
+    max_leg_imbalance: Decimal = Decimal("25000")
     max_portfolio_gross_exposure: Decimal = Decimal("100000")
     min_liquidation_distance_ratio: Decimal = Decimal("0.25")
     max_daily_loss: Decimal = Decimal("1000")
@@ -54,6 +58,12 @@ class PaperRiskResult:
             "limits": {
                 "max_account_leverage": decimal_str(self.limits.max_account_leverage),
                 "max_symbol_exposure": decimal_str(self.limits.max_symbol_exposure),
+                "max_sector_exposure": decimal_str(self.limits.max_sector_exposure),
+                "max_correlated_exposure": decimal_str(
+                    self.limits.max_correlated_exposure
+                ),
+                "max_beta_exposure": decimal_str(self.limits.max_beta_exposure),
+                "max_leg_imbalance": decimal_str(self.limits.max_leg_imbalance),
                 "max_portfolio_gross_exposure": decimal_str(
                     self.limits.max_portfolio_gross_exposure
                 ),
@@ -155,6 +165,23 @@ def evaluate_paper_order_risk(
         reasons.append("max symbol exposure would be exceeded")
 
     gross_exposure = _projected_gross_exposure(account_state, intent)
+    portfolio_exposure = calculate_portfolio_exposure(account_state)
+    projected_sector_exposure = portfolio_exposure.sector_exposure + intent.notional
+    projected_correlated_exposure = (
+        portfolio_exposure.correlated_exposure + intent.notional
+    )
+    projected_beta_exposure = abs(portfolio_exposure.beta_exposure) + intent.notional
+    projected_leg_imbalance = portfolio_exposure.leg_imbalance + intent.notional
+
+    if projected_sector_exposure > selected_limits.max_sector_exposure:
+        reasons.append("max sector exposure would be exceeded")
+    if projected_correlated_exposure > selected_limits.max_correlated_exposure:
+        reasons.append("max correlated exposure would be exceeded")
+    if projected_beta_exposure > selected_limits.max_beta_exposure:
+        reasons.append("max beta exposure would be exceeded")
+    if projected_leg_imbalance > selected_limits.max_leg_imbalance:
+        reasons.append("max leg imbalance would be exceeded")
+
     if gross_exposure > selected_limits.max_portfolio_gross_exposure:
         reasons.append("max portfolio gross exposure would be exceeded")
 

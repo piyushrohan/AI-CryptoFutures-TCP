@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import csv
+import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from pathlib import Path
+from typing import Any, Mapping
 
 from libs.schemas import decimal_str
 
@@ -165,6 +169,58 @@ def synthetic_market_depth_fixtures() -> tuple[MarketDepthSnapshot, ...]:
     return tuple(rows)
 
 
+def _parse_timestamp(value: object) -> datetime:
+    if value in (None, ""):
+        return datetime.now(UTC)
+    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
+def _snapshot_from_mapping(row: Mapping[str, Any]) -> MarketDepthSnapshot:
+    timestamp = _parse_timestamp(row.get("timestamp"))
+    receive_timestamp = _parse_timestamp(row.get("receive_timestamp", timestamp.isoformat()))
+    latency_ms = int(row.get("latency_ms", max(
+        0,
+        int((receive_timestamp - timestamp).total_seconds() * 1000),
+    )))
+    return MarketDepthSnapshot(
+        symbol=str(row["symbol"]),
+        timestamp=timestamp,
+        receive_timestamp=receive_timestamp,
+        bid=Decimal(str(row["bid"])),
+        ask=Decimal(str(row["ask"])),
+        bid_size=Decimal(str(row.get("bid_size", "1"))),
+        ask_size=Decimal(str(row.get("ask_size", "1"))),
+        buy_trade_qty=Decimal(str(row.get("buy_trade_qty", "0"))),
+        sell_trade_qty=Decimal(str(row.get("sell_trade_qty", "0"))),
+        funding_rate_bps=Decimal(str(row.get("funding_rate_bps", "0"))),
+        open_interest=Decimal(str(row.get("open_interest", "0"))),
+        liquidation_notional=Decimal(str(row.get("liquidation_notional", "0"))),
+        latency_ms=latency_ms,
+    )
+
+
+def load_replay_file(path: str | Path) -> tuple[MarketDepthSnapshot, ...]:
+    replay_path = Path(path)
+    if replay_path.suffix.lower() == ".json":
+        loaded = json.loads(replay_path.read_text(encoding="utf-8"))
+        if not isinstance(loaded, list):
+            raise ValueError("replay JSON must contain a list of snapshot objects")
+        rows = loaded
+    else:
+        with replay_path.open(newline="", encoding="utf-8") as handle:
+            rows = list(csv.DictReader(handle))
+
+    snapshots = tuple(_snapshot_from_mapping(row) for row in rows)
+    symbols = {item.symbol for item in snapshots}
+    forbidden = symbols - {"BTCUSDC", "ETHUSDC"}
+    if forbidden:
+        raise ValueError(
+            "local replay files may only contain BTCUSDC and ETHUSDC snapshots"
+        )
+    return snapshots
+
+
 def derive_synthetic_ethbtc(
     eth: MarketDepthSnapshot,
     btc: MarketDepthSnapshot,
@@ -260,8 +316,12 @@ def generate_microstructure_features(
     return tuple(features)
 
 
-def replay_payload() -> dict[str, object]:
-    snapshots = synthetic_market_depth_fixtures()
+def replay_payload(
+    snapshots: tuple[MarketDepthSnapshot, ...] | None = None,
+    *,
+    source: str = "synthetic_in_repo_fixture",
+) -> dict[str, object]:
+    snapshots = snapshots or synthetic_market_depth_fixtures()
     features = generate_microstructure_features(snapshots)
     synthetic = [
         derive_synthetic_ethbtc(
@@ -281,7 +341,7 @@ def replay_payload() -> dict[str, object]:
     return {
         "status": "ok",
         "service": "market_data_replay",
-        "source": "synthetic_in_repo_fixture",
+        "source": source,
         "notes": [
             "no downloaded market data",
             "BTCUSDC and ETHUSDC only",
