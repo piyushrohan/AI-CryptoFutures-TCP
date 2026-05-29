@@ -235,6 +235,60 @@
         <pre id="strategy-output" class="data-output">No strategy session started.</pre>
       </section>
 
+      <section class="panel wide" aria-labelledby="model-title">
+        <div class="panel-heading">
+          <h2 id="model-title">Model Governance</h2>
+          <span id="model-state" class="pill">research_candidate</span>
+        </div>
+        <div class="split-grid">
+          <div class="metric-block">
+            <h3>Registry</h3>
+            <dl class="status-grid compact">
+              <div>
+                <dt>Models</dt>
+                <dd id="model-count">0</dd>
+              </div>
+              <div>
+                <dt>Expected edge</dt>
+                <dd id="model-edge">0</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="metric-block">
+            <h3>Decision Inspector</h3>
+            <pre id="model-output" class="data-output">No model decision record loaded.</pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel wide" aria-labelledby="testnet-title">
+        <div class="panel-heading">
+          <h2 id="testnet-title">Binance Testnet Lane</h2>
+          <span id="testnet-state" class="pill locked">locked</span>
+        </div>
+        <dl class="status-grid compact">
+          <div>
+            <dt>Network calls</dt>
+            <dd id="testnet-network">not_performed</dd>
+          </div>
+        </dl>
+        <pre id="testnet-output" class="data-output">Testnet validation lane is locked by default.</pre>
+      </section>
+
+      <section class="panel wide" aria-labelledby="live-readonly-title">
+        <div class="panel-heading">
+          <h2 id="live-readonly-title">LIVE Read-only</h2>
+          <span id="live-readonly-state" class="pill locked">locked</span>
+        </div>
+        <dl class="status-grid compact">
+          <div>
+            <dt>Order submission</dt>
+            <dd id="live-order-state">forbidden</dd>
+          </div>
+        </dl>
+        <pre id="live-readonly-output" class="data-output">LIVE read-only is gated and locked by default.</pre>
+      </section>
+
       <section class="panel wide" aria-labelledby="universe-title">
         <div class="panel-heading">
           <h2 id="universe-title">Symbol Universe</h2>

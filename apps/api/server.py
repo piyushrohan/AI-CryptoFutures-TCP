@@ -26,7 +26,22 @@ from services.market_data import (
     replay_payload,
     symbol_metadata_payload,
 )
+from services.execution import (
+    testnet_order_validation_payload,
+    testnet_validation_payload,
+)
+from services.model_service import (
+    evaluation_results_payload,
+    feature_registry_payload,
+    model_decision_records_payload,
+    model_registry_payload,
+    recommendation_preview_payload,
+)
 from services.paper_exchange import InMemoryPaperExchange, default_paper_exchange
+from services.portfolio import (
+    live_order_rejection_payload,
+    live_readonly_account_payload,
+)
 from services.risk import evaluate_command, risk_status_payload
 from services.strategy import (
     StrategySessionManager,
@@ -321,6 +336,27 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                 _STRATEGY_MANAGER.recommendations_payload(),
             )
             return
+        if self.path == "/models/registry":
+            self._send_json(HTTPStatus.OK, model_registry_payload())
+            return
+        if self.path == "/models/features":
+            self._send_json(HTTPStatus.OK, feature_registry_payload())
+            return
+        if self.path == "/models/evaluations":
+            self._send_json(HTTPStatus.OK, evaluation_results_payload())
+            return
+        if self.path == "/models/decisions":
+            self._send_json(HTTPStatus.OK, model_decision_records_payload())
+            return
+        if self.path == "/binance/testnet/validation":
+            self._send_json(HTTPStatus.OK, testnet_validation_payload(load_runtime_config()))
+            return
+        if self.path == "/live/readonly":
+            self._send_json(
+                HTTPStatus.OK,
+                live_readonly_account_payload(load_runtime_config(), recorder=_AUDIT_RECORDER),
+            )
+            return
         self._send_json(
             HTTPStatus.NOT_FOUND,
             {
@@ -345,6 +381,15 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
                     "/backtests/report",
                     "/strategy/sessions",
                     "/strategy/recommendations",
+                    "/models/registry",
+                    "/models/features",
+                    "/models/evaluations",
+                    "/models/decisions",
+                    "/models/recommendation-preview",
+                    "/binance/testnet/validation",
+                    "/binance/testnet/order/validate",
+                    "/live/readonly",
+                    "/live/orders",
                 ],
             },
         )
@@ -403,6 +448,22 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
             return
         if self.path == "/strategy/sessions/stop":
             self._handle_json_payload(strategy_stop_payload)
+            return
+        if self.path == "/models/recommendation-preview":
+            self._handle_json_payload(recommendation_preview_payload)
+            return
+        if self.path == "/binance/testnet/order/validate":
+            self._handle_json_payload(
+                lambda payload: testnet_order_validation_payload(
+                    payload,
+                    config=load_runtime_config(),
+                )
+            )
+            return
+        if self.path == "/live/orders":
+            self._handle_json_payload(
+                lambda payload: live_order_rejection_payload(load_runtime_config())
+            )
             return
         self._send_json(
             HTTPStatus.METHOD_NOT_ALLOWED,
