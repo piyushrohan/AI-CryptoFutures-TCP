@@ -1,5 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from dataclasses import replace
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -14,6 +15,7 @@ from libs.schemas import (
     FeatureContribution,
     ModelDecisionRecord,
     PaperOrderIntent,
+    InstrumentRole,
     default_account_state,
     default_evaluation_results,
     default_feature_versions,
@@ -56,6 +58,23 @@ class PhaseSevenToNineContractTests(unittest.TestCase):
             ModelDecisionRecord.from_mapping(dict(base, rejected_alternatives="bad"))
         with self.assertRaises(ValueError):
             ModelDecisionRecord.from_mapping(dict(base, created_at="2026-01-01T00:00:00"))
+        with self.assertRaises(ValueError):
+            ModelDecisionRecord.from_mapping(dict(base, created_at=object()))
+
+    def test_model_decision_from_mapping_accepts_datetime_objects(self):
+        base = default_model_decision_records()[0].to_public_dict()
+        now = datetime.now(UTC)
+        base.update(
+            {
+                "input_window_start": now - timedelta(seconds=90),
+                "input_window_end": now,
+                "created_at": now,
+            }
+        )
+
+        parsed = ModelDecisionRecord.from_mapping(base)
+
+        self.assertEqual(parsed.created_at, now)
 
     def test_model_decision_validation_lists_all_required_explainability_fields(self):
         now = datetime.now(UTC)
@@ -111,6 +130,13 @@ class PhaseSevenToNineContractTests(unittest.TestCase):
         self.assertTrue(payload["preview"]["accepted"])
         self.assertEqual(payload["preview"]["recommendation_id"], "strategy-rec-000001")
 
+    def test_recommendation_preview_without_decision_serializes_none(self):
+        preview = ModelGovernanceStore(decisions=()).recommendation_preview("missing")
+
+        payload = preview.to_public_dict()
+
+        self.assertIsNone(payload["decision_record"])
+
     def test_binance_environment_and_backend_caller_contracts(self):
         validate_backend_caller("backend_api")
 
@@ -143,19 +169,20 @@ class PhaseSevenToNineContractTests(unittest.TestCase):
     def test_binance_payload_rejects_non_executable_symbol_metadata(self):
         metadata = next(
             item for item in default_account_state().symbol_metadata
-            if item.symbol == "SYN_ETHBTC"
+            if item.symbol == "BTCUSDC"
         )
+        non_executable = replace(metadata, role=InstrumentRole.REFERENCE)
         payload, reasons = validate_usdm_order_payload(
             PaperOrderIntent.from_mapping(
                 {
-                    "symbol": "SYN_ETHBTC",
+                    "symbol": "BTCUSDC",
                     "side": "BUY",
                     "book_side": "LONG",
-                    "quantity": "1",
-                    "limit_price": "0.05",
+                    "quantity": "0.001",
+                    "limit_price": "65000.4",
                 }
             ),
-            metadata,
+            non_executable,
             config=RuntimeConfig(
                 venue_target=VenueTarget.BINANCE_TESTNET,
                 credential_scope=CredentialScope.TRADING,
@@ -165,7 +192,102 @@ class PhaseSevenToNineContractTests(unittest.TestCase):
         )
 
         self.assertIsNone(payload)
-        self.assertIn("symbol filters are unavailable", reasons)
+        self.assertIn("symbol is not executable under current symbol policy", reasons)
+
+    def test_binance_payload_reports_filter_and_caller_safety_reasons(self):
+        metadata = next(
+            item for item in default_account_state().symbol_metadata
+            if item.symbol == "BTCUSDC"
+        )
+        mismatched = replace(metadata, symbol="ETHUSDC")
+
+        payload, reasons = validate_usdm_order_payload(
+            PaperOrderIntent.from_mapping(
+                {
+                    "symbol": "BTCUSDC",
+                    "side": "BUY",
+                    "book_side": "LONG",
+                    "quantity": "0.0003",
+                    "limit_price": "65000.4",
+                    "time_in_force": "GTC",
+                }
+            ),
+            mismatched,
+            config=RuntimeConfig(
+                venue_target=VenueTarget.BINANCE_TESTNET,
+                credential_scope=CredentialScope.TRADING,
+                binance_api_key_present=True,
+                binance_api_secret_present=True,
+            ),
+            caller="frontend",
+        )
+
+        joined = "; ".join(reasons)
+        self.assertIsNone(payload)
+        self.assertIn("browser code must never sign", joined)
+        self.assertIn("symbol does not match", joined)
+        self.assertIn("GTX", joined)
+        self.assertIn("lot size", joined)
+        self.assertIn("min notional", joined)
+
+    def test_binance_payload_handles_invalid_filter_step_defensively(self):
+        metadata = next(
+            item for item in default_account_state().symbol_metadata
+            if item.symbol == "BTCUSDC"
+        )
+        bad_filters = replace(metadata.filters, lot_size=Decimal("0"))
+        bad_metadata = replace(metadata, filters=bad_filters)
+
+        payload, reasons = validate_usdm_order_payload(
+            PaperOrderIntent.from_mapping(
+                {
+                    "symbol": "BTCUSDC",
+                    "side": "BUY",
+                    "book_side": "LONG",
+                    "quantity": "0.001",
+                    "limit_price": "65000.4",
+                }
+            ),
+            bad_metadata,
+            config=RuntimeConfig(
+                venue_target=VenueTarget.BINANCE_TESTNET,
+                credential_scope=CredentialScope.TRADING,
+                binance_api_key_present=True,
+                binance_api_secret_present=True,
+            ),
+        )
+
+        self.assertIsNone(payload)
+        self.assertIn("quantity does not align to Binance lot size", reasons)
+
+    def test_binance_payload_rejects_missing_filters(self):
+        metadata = next(
+            item for item in default_account_state().symbol_metadata
+            if item.symbol == "BTCUSDC"
+        )
+        without_filters = replace(metadata, filters=None)
+
+        payload, reasons = validate_usdm_order_payload(
+            PaperOrderIntent.from_mapping(
+                {
+                    "symbol": "BTCUSDC",
+                    "side": "BUY",
+                    "book_side": "LONG",
+                    "quantity": "0.001",
+                    "limit_price": "65000.4",
+                }
+            ),
+            without_filters,
+            config=RuntimeConfig(
+                venue_target=VenueTarget.BINANCE_TESTNET,
+                credential_scope=CredentialScope.TRADING,
+                binance_api_key_present=True,
+                binance_api_secret_present=True,
+            ),
+        )
+
+        self.assertIsNone(payload)
+        self.assertEqual(reasons, ("symbol filters are unavailable",))
 
     def test_testnet_order_validation_reports_missing_metadata(self):
         payload = testnet_order_validation_payload(

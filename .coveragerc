@@ -1,5 +1,4 @@
 [run]
-branch = True
 source =
     libs.binance_connector
     libs.schemas.model_governance
