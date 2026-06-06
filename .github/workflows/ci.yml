@@ -21,8 +21,13 @@ jobs:
       - name: Syntax checks
         run: python -m compileall -q apps libs services tests
 
-      - name: Unit tests
-        run: python -m unittest discover -s tests/unit
+      - name: Install dev test dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Unit tests with coverage gate
+        run: |
+          python -m coverage run -m unittest discover -s tests/unit
+          python -m coverage report --fail-under=98
 
       - name: Compose config check
         run: docker compose config >/dev/null
@@ -32,6 +37,7 @@ jobs:
           test -f README.md
           test -f AGENTS.md
           test -f docs/roadmap/developer_roadmap.md
+          test -f docs/roadmap/phase_7_9_implementation_status.md
           test -f docs/architecture/frontend_control_surface.md
           test -f docs/architecture/system_design.md
           test -f docs/market_data/three_asset_universe.md

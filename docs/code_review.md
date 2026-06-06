@@ -15,6 +15,7 @@ Every review should ask:
 - Can this change bypass risk, portfolio, execution, or audit checks?
 - Can frontend code sign exchange requests or call authenticated exchange endpoints directly?
 - Can a strategy or model call the exchange connector directly?
+- Can model governance mark a recommendation executable without a complete `ModelDecisionRecord`?
 - Can this change silently create market orders, taker behavior, or unsafe defaults?
 - Can this change hard-code fees, assume permanent zero maker fees, or skip expected-edge-after-costs calculations?
 - Can this change leak maker-first intent into taker fills without explicit gates and audit records?
@@ -38,6 +39,7 @@ Flag as P0:
 - Any frontend exchange-signing path.
 - Any endpoint or worker that can place live orders without explicit live-trading gates.
 - Any path that allows a strategy or model to directly call an exchange connector.
+- Any model or strategy recommendation converted to an order intent without a complete decision record and normal downstream checks.
 - Any withdrawal-related capability.
 - Any default that enables live trading.
 - Any risk-engine bypass for trading commands.
@@ -65,6 +67,8 @@ Flag as P1:
 - Unclear post-only, cancel-if-crossing, fill-probability, queue, adverse-selection, or latency behavior.
 - Portfolio exposure or margin logic that does not support future multi-symbol management.
 - Model decision output that is not explainable or auditable.
+- Binance testnet validation code that performs network calls or request signing in unit tests.
+- `LIVE` read-only code that can submit, cancel, or replace orders.
 
 ### P2: Should Fix Soon
 

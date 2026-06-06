@@ -1,0 +1,15 @@
+[run]
+source =
+    libs.binance_connector
+    libs.schemas.model_governance
+    services.execution.binance_validation
+    services.model_service
+    services.portfolio.live_readonly
+
+[report]
+fail_under = 98
+show_missing = True
+skip_covered = True
+exclude_also =
+    if __name__ == .__main__.:
+    def run\(

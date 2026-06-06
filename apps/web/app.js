@@ -217,6 +217,68 @@ const renderStrategy = (payload) => {
   );
 };
 
+const renderModels = (registry, evaluations, decisions) => {
+  const latestModel = (registry.models || [])[0];
+  const latestEvaluation = (evaluations.evaluations || [])[0];
+  const latestDecision = (decisions.decisions || [])[0];
+  setText("model-count", `${registry.models?.length || 0}`);
+  setText(
+    "model-state",
+    latestModel ? latestModel.approval_state : "research_candidate",
+  );
+  setText(
+    "model-edge",
+    latestEvaluation ? latestEvaluation.expected_edge_after_costs : "0",
+  );
+  const output = document.getElementById("model-output");
+  if (output) {
+    output.textContent = JSON.stringify(
+      {
+        model: latestModel || null,
+        evaluation: latestEvaluation || null,
+        decision: latestDecision || null,
+      },
+      null,
+      2,
+    );
+  }
+};
+
+const renderBinanceValidation = (payload) => {
+  setText("testnet-state", payload.accepted ? "gated open" : "locked");
+  setText("testnet-network", payload.network_calls || "not_performed");
+  const output = document.getElementById("testnet-output");
+  if (output) {
+    output.textContent = JSON.stringify(
+      {
+        accepted: payload.accepted,
+        reasons: payload.reasons,
+        request_specs: payload.request_specs,
+      },
+      null,
+      2,
+    );
+  }
+};
+
+const renderLiveReadonly = (payload) => {
+  setText("live-readonly-state", payload.accepted ? "read only" : "locked");
+  setText("live-order-state", payload.order_submission || "forbidden");
+  const output = document.getElementById("live-readonly-output");
+  if (output) {
+    output.textContent = JSON.stringify(
+      {
+        accepted: payload.accepted,
+        reasons: payload.reasons,
+        credential_metadata: payload.credential_metadata,
+        reconciliation: payload.snapshot?.reconciliation || null,
+      },
+      null,
+      2,
+    );
+  }
+};
+
 const paperOrderPayload = () => {
   const form = document.getElementById("paper-order-form");
   const formData = new FormData(form);
@@ -311,6 +373,11 @@ const boot = async () => {
       research,
       backtest,
       strategy,
+      modelRegistry,
+      modelEvaluations,
+      modelDecisions,
+      testnetValidation,
+      liveReadonly,
     ] = await Promise.all([
       fetchJson("/status"),
       fetchJson("/risk/status"),
@@ -324,6 +391,11 @@ const boot = async () => {
       fetchJson("/research/features"),
       fetchJson("/backtests/report"),
       fetchJson("/strategy/sessions"),
+      fetchJson("/models/registry"),
+      fetchJson("/models/evaluations"),
+      fetchJson("/models/decisions"),
+      fetchJson("/binance/testnet/validation"),
+      fetchJson("/live/readonly"),
     ]);
     renderStatus(status);
     renderRisk(risk);
@@ -337,6 +409,9 @@ const boot = async () => {
     renderResearch(research);
     renderBacktest(backtest);
     renderStrategy(strategy);
+    renderModels(modelRegistry, modelEvaluations, modelDecisions);
+    renderBinanceValidation(testnetValidation);
+    renderLiveReadonly(liveReadonly);
   } catch (error) {
     setText("api-state", "offline");
   }

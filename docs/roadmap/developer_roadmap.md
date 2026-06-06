@@ -8,6 +8,9 @@ This document is documentation only. It does not implement application code, Bin
 
 Implementation status for the deterministic local MVP of phases 3 through 6 is
 tracked in [Phase 3-6 Implementation Status](phase_3_6_implementation_status.md).
+Local implementation status for the model-governance, Binance testnet
+validation, and `LIVE` read-only wave is tracked in
+[Phase 7-9 Implementation Status](phase_7_9_implementation_status.md).
 
 ## Roadmap Principles
 

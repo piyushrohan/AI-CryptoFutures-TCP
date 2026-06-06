@@ -18,3 +18,7 @@ Models must be governed as deployable artifacts with traceable data, features, e
 ## Deployment Posture
 
 No model should be able to bypass command validation, risk checks, portfolio checks, execution checks, audit, reconciliation, or live-trading gates. MLOps approval states can describe readiness, but they must never authorize execution on their own. Models and strategies must never directly call the exchange connector.
+
+## Current Local Implementation
+
+The Phase 7 local implementation adds model registry metadata, feature-version metadata, evaluation summaries, `ModelDecisionRecord` payloads, and recommendation previews. A recommendation preview is accepted only when a complete decision record exists. Acceptance is still not order approval; it only means the recommendation is explainable enough to enter the normal command, risk, portfolio, execution, audit, and reconciliation path.

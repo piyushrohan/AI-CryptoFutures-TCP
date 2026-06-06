@@ -19,3 +19,5 @@ Use `.env.example` to document expected environment variable names only. Keep re
 ## Exchange Access
 
 Any future Binance integration must keep signing in backend infrastructure, enforce operator-mode, venue-target, credential-scope, trading-gate, autonomy-stage, and MLOps-state constraints, and prove through tests that live-trading permissions are disabled by default.
+
+The current Binance USDⓈ-M Futures boundary is validation-only. It may report whether backend credentials are present, but it must only expose redacted credential metadata such as `api_key_present`, `api_secret_present`, and `secrets_redacted`. Secret values must never be returned to the frontend, audit records, logs, tests, or documentation.
