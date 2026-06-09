@@ -1,5 +1,11 @@
 """Audit services."""
 
+from services.audit.ledger import (
+    CommandLedgerEntry,
+    CommandLedgerError,
+    CommandLifecycleStatus,
+    InMemoryCommandLedger,
+)
 from services.audit.records import (
     AuditRecord,
     FileBackedAuditRecorder,
@@ -8,6 +14,10 @@ from services.audit.records import (
 
 __all__ = [
     "AuditRecord",
+    "CommandLedgerEntry",
+    "CommandLedgerError",
+    "CommandLifecycleStatus",
     "FileBackedAuditRecorder",
+    "InMemoryCommandLedger",
     "InMemoryAuditRecorder",
 ]

@@ -60,3 +60,27 @@ Still not implemented:
 - Browser code never receives Binance credentials and never signs Binance requests.
 - Strategies and models still cannot directly call the exchange connector.
 - Phase 10 live-trade research remains out of scope.
+
+## Workstation Production Foundation
+
+Implemented after the local Phase 7-9 wave:
+
+- FastAPI `/api/v1` surface with Pydantic request contracts.
+- Single-owner bearer-token authentication and CSRF checks for mutating routes.
+- Command-ledger contract with idempotency keys and audit linkage.
+- Postgres/Alembic schema scaffold for durable production state.
+- Redacted env/macOS Keychain secret-provider contracts.
+- Separate credential purposes for Binance testnet trading and Binance live
+  read-only access.
+- Backend-only Binance REST client foundation with HMAC signing, rate-limit
+  header capture, request ID capture, and venue error classification.
+- Monotonic reconciliation contracts for external order updates.
+
+Still not implemented:
+
+- Authenticated Binance testnet network workflows.
+- User data stream websocket worker.
+- Durable Postgres repositories replacing JSON/in-memory state.
+- Testnet order submission.
+- Authenticated `LIVE` read-only REST snapshots.
+- Any live order submission.

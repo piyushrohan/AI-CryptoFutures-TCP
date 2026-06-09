@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -531,9 +532,21 @@ class ApiRequestHandler(BaseHTTPRequestHandler):
 
 def run(host: str = "0.0.0.0", port: int | None = None) -> None:
     selected_port = port or int(os.environ.get("API_PORT", "8080"))
-    server = ThreadingHTTPServer((host, selected_port), ApiRequestHandler)
-    print(f"api listening on {host}:{selected_port}", flush=True)
-    server.serve_forever()
+    if os.environ.get("TCP_LEGACY_HTTP_SERVER", "").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        server = ThreadingHTTPServer((host, selected_port), ApiRequestHandler)
+        print(f"legacy api listening on {host}:{selected_port}", flush=True)
+        server.serve_forever()
+        return
+
+    import uvicorn
+
+    sys.modules.setdefault("apps.api.server", sys.modules[__name__])
+    uvicorn.run("apps.api.fastapi_app:app", host=host, port=selected_port)
 
 
 if __name__ == "__main__":

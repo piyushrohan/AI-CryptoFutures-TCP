@@ -1,4 +1,4 @@
-.PHONY: help bootstrap-check check ci compose-check coverage docs-check lint secret-scan test tree up api
+.PHONY: help bootstrap-check check ci compose-check coverage docs-check lint migrate secret-scan test tree up api
 
 help:
 	@printf "AI-CryptoFutures-TCP development targets\n"
@@ -8,6 +8,7 @@ help:
 	@printf "  make lint   - run syntax checks\n"
 	@printf "  make test   - run unit tests\n"
 	@printf "  make coverage - run unit tests with >=98%% coverage\n"
+	@printf "  make migrate - apply Postgres migrations using DATABASE_URL\n"
 	@printf "  make up     - start the local development stack\n"
 	@printf "  make api    - start the API locally without compose\n"
 	@printf "  make tree   - print the tracked skeleton tree\n"
@@ -31,11 +32,15 @@ coverage:
 	@python3 -m coverage run -m unittest discover -s tests/unit
 	@python3 -m coverage report --fail-under=98
 
+migrate:
+	@python3 -m alembic upgrade head
+
 compose-check:
 	@docker compose config >/dev/null
 
 docs-check:
 	@test -f docs/roadmap/developer_roadmap.md
+	@test -f docs/roadmap/workstation_production_readiness.md
 	@test -f docs/architecture/frontend_control_surface.md
 	@test -f docs/architecture/system_design.md
 	@test -f docs/roadmap/phase_7_9_implementation_status.md

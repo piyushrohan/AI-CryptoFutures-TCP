@@ -35,7 +35,13 @@ After startup, the frontend should be the main entry point. Developers and opera
 
 Command-line tools may support development and maintenance, but they should not become the primary trading control path.
 
-Phase 1 exposes the frontend at `http://localhost:3000` and the API at `http://localhost:8080`. The frontend displays mode/gate status, risk guardrails, the code-owned control-surface catalog, audit records, and disabled panic controls.
+The current local stack exposes the frontend at `http://localhost:3000` and a
+FastAPI backend at `http://localhost:8080`. Production-oriented routes are under
+`/api/v1`. Protected routes require a single-owner bearer token from
+`TCP_ADMIN_TOKEN`; mutating routes also require `TCP_CSRF_TOKEN`. The frontend
+reads these local operator tokens from browser local storage keys
+`tcp_admin_token` and `tcp_csrf_token`. Binance exchange credentials still
+remain backend-only and must never be placed in browser storage.
 
 ## Expected Local Services
 
@@ -80,5 +86,8 @@ The bootstrap flow should display or expose:
 - Portfolio-engine availability.
 - Execution-engine availability.
 - Audit write availability.
+- Single-owner API auth status.
+- Postgres configuration status.
+- Secret-provider status with redacted credential metadata.
 
 If any safety dependency is unavailable, trading actions should remain blocked while read-only development workflows continue where possible.

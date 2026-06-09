@@ -1,10 +1,10 @@
 # AI-CryptoFutures-TCP
 
-AI-CryptoFutures-TCP is the initial skeleton for an AI crypto futures Trading Control Platform focused first on Binance USDⓈ-M Futures.
+AI-CryptoFutures-TCP is an AI crypto futures Trading Control Platform focused first on Binance USDⓈ-M Futures.
 
 TCP means Trading Control Platform. This project is intended to become a frontend-first control plane for observing markets, issuing manual trading commands, running paper workflows, running internal Binance testnet validation lanes, managing training, evaluation, backtesting, strategy sessions, model deployment, and governing eventual live trading behind strict controls. It is not just a bot.
 
-This repository currently contains guardrails, documentation, configuration placeholders, and service boundaries only. It does not contain trading strategy logic, Binance connectivity, live trading code, or real credentials.
+This repository currently contains safety guardrails, a local paper-trading MVP, model-governance scaffolding, a FastAPI `/api/v1` production API foundation, durable-storage migration scaffolding, backend-only secret-provider contracts, and backend-only Binance request-signing/client contracts. Real Binance network submission, live trading, and real credentials are not committed or enabled.
 
 ## Safety Model
 
@@ -62,35 +62,44 @@ Exchange secrets must remain backend-only. The frontend must never receive excha
 
 The implementation sequence is defined in [docs/roadmap/developer_roadmap.md](docs/roadmap/developer_roadmap.md). It is phase-gated rather than date-based, with frontend control mapping first, Safety Spine before strategy, `PAPER` as the first full user-facing mode, Binance testnet as an internal validation lane after paper, `LIVE` introduced first with read-only credentials, and Portfolio Margin treated as later research.
 
+The first workstation production-readiness target is tracked in [docs/roadmap/workstation_production_readiness.md](docs/roadmap/workstation_production_readiness.md). That target is single-owner local operation with real Binance testnet connectivity and `LIVE` read-only visibility, while live order submission remains out of scope.
+
 ## Local Bootstrap
 
-Use `make up` to start the local development stack. It starts a static frontend control shell at `http://localhost:3000`, an API bootstrap at `http://localhost:8080`, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, `autonomy_stage=observe_only`, and live trading disabled. Binance credentials are not required for local bootstrap.
+Use `make up` to start the local development stack. It starts a static frontend control shell at `http://localhost:3000`, a FastAPI backend at `http://localhost:8080`, database, Redis, and monitoring placeholders with `operator_mode=paper`, `venue_target=internal_paper`, `credential_scope=none`, `trading_gate=locked`, `autonomy_stage=observe_only`, and live trading disabled. Binance credentials are not required for local bootstrap.
 
-The API exposes read-only safety and Phase 2 truth-model endpoints plus command validation only:
+Protected `/api/v1` routes require `TCP_ADMIN_TOKEN`; mutating routes also require `TCP_CSRF_TOKEN`. The static frontend sends those values from browser local storage keys `tcp_admin_token` and `tcp_csrf_token`. These are local operator API tokens, not Binance exchange credentials.
 
-- `GET /health`
-- `GET /status`
-- `GET /control-surface`
-- `GET /symbol-universe`
-- `GET /exchange-state`
-- `GET /account-state`
-- `GET /symbol-metadata`
-- `GET /fee-policy`
-- `GET /risk/status`
-- `GET /audit/records`
-- `GET /models/registry`
-- `GET /models/features`
-- `GET /models/evaluations`
-- `GET /models/decisions`
-- `GET /binance/testnet/validation`
-- `GET /live/readonly`
-- `POST /commands/validate`
-- `POST /models/recommendation-preview`
-- `POST /binance/testnet/order/validate`
-- `POST /live/orders`
+The API exposes read-only safety, paper, research, model-governance, testnet validation, and `LIVE` read-only surfaces under `/api/v1`, including:
 
-`POST /commands/validate` records an audit decision and performs no execution. Trading-affecting commands are rejected in `observe_only`, strategy/session commands require a current fee model, and live trading remains fail-closed. Testnet order validation builds Binance-shaped payloads only; it does not sign or submit orders. `POST /live/orders` is an explicit fail-closed rejection in this phase.
+- `GET /api/v1/health`
+- `GET /api/v1/status`
+- `GET /api/v1/ops/status`
+- `GET /api/v1/control-surface`
+- `GET /api/v1/symbol-universe`
+- `GET /api/v1/exchange-state`
+- `GET /api/v1/account-state`
+- `GET /api/v1/symbol-metadata`
+- `GET /api/v1/fee-policy`
+- `GET /api/v1/risk/status`
+- `GET /api/v1/audit/records`
+- `GET /api/v1/audit/commands`
+- `GET /api/v1/paper`
+- `GET /api/v1/models/registry`
+- `GET /api/v1/models/features`
+- `GET /api/v1/models/evaluations`
+- `GET /api/v1/models/decisions`
+- `GET /api/v1/binance/testnet/validation`
+- `GET /api/v1/live/readonly`
+- `POST /api/v1/commands/validate`
+- `POST /api/v1/models/recommendation-preview`
+- `POST /api/v1/binance/testnet/order/validate`
+- `POST /api/v1/live/orders`
+
+`POST /api/v1/commands/validate` records an audit decision, records a command-ledger entry, and performs no execution. Trading-affecting commands are rejected in `observe_only`, strategy/session commands require a current fee model, and live trading remains fail-closed. Testnet order validation builds Binance-shaped payloads only; it does not submit orders. `POST /api/v1/live/orders` is an explicit fail-closed rejection in this phase.
 
 ## Development Status
 
-Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Phase 2 adds deterministic local/mock account state, symbol metadata, fee policy, freshness checks, and read-only inspectors. Phases 3 through 6 add deterministic local paper trading, portfolio/risk hardening, synthetic microstructure replay/backtests, and paper-only strategy sessions. Phases 7 through 9 add local model decision records, validation-only Binance USDⓈ-M Futures testnet lane scaffolding, and gated `LIVE` read-only projection. Real Binance connectivity, request signing, testnet order submission, model-driven execution, and live trading are not implemented.
+Phase 0 and Phase 1 bootstrap code define the control-surface contract, safe runtime defaults, command validation scaffolding, audit scaffolding, risk veto scaffolding, and CI baseline. Phase 2 adds deterministic local/mock account state, symbol metadata, fee policy, freshness checks, and read-only inspectors. Phases 3 through 6 add deterministic local paper trading, portfolio/risk hardening, synthetic microstructure replay/backtests, and paper-only strategy sessions. Phases 7 through 9 add local model decision records, validation-only Binance USDⓈ-M Futures testnet lane scaffolding, and gated `LIVE` read-only projection.
+
+The workstation production foundation now adds FastAPI, Pydantic request contracts, single-owner auth, CSRF checks, command-ledger contracts, Postgres/Alembic schema scaffolding, redacted secret-provider contracts, separated Binance credential purposes, a backend-only signed Binance REST client foundation, and monotonic reconciliation contracts. Authenticated Binance network calls, user data streams, durable repository implementations, testnet order submission, live-read-only REST snapshots, model-driven execution, and live trading remain to be implemented.

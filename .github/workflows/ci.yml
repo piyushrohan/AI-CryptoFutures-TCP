@@ -37,6 +37,7 @@ jobs:
           test -f README.md
           test -f AGENTS.md
           test -f docs/roadmap/developer_roadmap.md
+          test -f docs/roadmap/workstation_production_readiness.md
           test -f docs/roadmap/phase_7_9_implementation_status.md
           test -f docs/architecture/frontend_control_surface.md
           test -f docs/architecture/system_design.md

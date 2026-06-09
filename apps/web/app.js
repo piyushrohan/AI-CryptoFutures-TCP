@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8080";
+const API_BASE = "http://localhost:8080/api/v1";
 
 const setText = (id, value) => {
   const element = document.getElementById(id);
@@ -8,7 +8,9 @@ const setText = (id, value) => {
 };
 
 const fetchJson = async (path) => {
-  const response = await fetch(`${API_BASE}${path}`);
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: authHeaders("GET"),
+  });
   if (!response.ok) {
     throw new Error(`${path} returned ${response.status}`);
   }
@@ -18,13 +20,26 @@ const fetchJson = async (path) => {
 const postJson = async (path, payload) => {
   const response = await fetch(`${API_BASE}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders("POST"),
     body: JSON.stringify(payload || {}),
   });
   if (!response.ok) {
     throw new Error(`${path} returned ${response.status}`);
   }
   return response.json();
+};
+
+const authHeaders = (method) => {
+  const headers = { "Content-Type": "application/json" };
+  const token = window.localStorage.getItem("tcp_admin_token");
+  const csrf = window.localStorage.getItem("tcp_csrf_token");
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  if (method !== "GET" && csrf) {
+    headers["X-TCP-CSRF-Token"] = csrf;
+  }
+  return headers;
 };
 
 const renderStatus = (payload) => {

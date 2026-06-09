@@ -91,6 +91,10 @@ class RuntimeConfig:
     secrets_backend: str = "local_dev_only"
     binance_api_key_present: bool = False
     binance_api_secret_present: bool = False
+    binance_testnet_api_key_present: bool = False
+    binance_testnet_api_secret_present: bool = False
+    binance_live_readonly_api_key_present: bool = False
+    binance_live_readonly_api_secret_present: bool = False
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "RuntimeConfig":
@@ -128,11 +132,45 @@ class RuntimeConfig:
             secrets_backend=values.get("SECRETS_BACKEND", "local_dev_only"),
             binance_api_key_present=bool(values.get("BINANCE_API_KEY")),
             binance_api_secret_present=bool(values.get("BINANCE_API_SECRET")),
+            binance_testnet_api_key_present=bool(
+                values.get("BINANCE_TESTNET_API_KEY")
+            ),
+            binance_testnet_api_secret_present=bool(
+                values.get("BINANCE_TESTNET_API_SECRET")
+            ),
+            binance_live_readonly_api_key_present=bool(
+                values.get("BINANCE_LIVE_READONLY_API_KEY")
+            ),
+            binance_live_readonly_api_secret_present=bool(
+                values.get("BINANCE_LIVE_READONLY_API_SECRET")
+            ),
         )
 
     @property
     def binance_credentials_present(self) -> bool:
+        return (
+            self.legacy_binance_credentials_present
+            or self.binance_testnet_credentials_present
+            or self.binance_live_readonly_credentials_present
+        )
+
+    @property
+    def legacy_binance_credentials_present(self) -> bool:
         return self.binance_api_key_present and self.binance_api_secret_present
+
+    @property
+    def binance_testnet_credentials_present(self) -> bool:
+        return (
+            self.binance_testnet_api_key_present
+            and self.binance_testnet_api_secret_present
+        )
+
+    @property
+    def binance_live_readonly_credentials_present(self) -> bool:
+        return (
+            self.binance_live_readonly_api_key_present
+            and self.binance_live_readonly_api_secret_present
+        )
 
     @property
     def binance_credentials_required(self) -> bool:
@@ -197,6 +235,12 @@ class RuntimeConfig:
             "fail_closed": self.fail_closed,
             "binance_credentials_required": self.binance_credentials_required,
             "binance_credentials_present": self.binance_credentials_present,
+            "binance_testnet_credentials_present": (
+                self.binance_testnet_credentials_present
+            ),
+            "binance_live_readonly_credentials_present": (
+                self.binance_live_readonly_credentials_present
+            ),
             "validation_errors": errors,
         }
 

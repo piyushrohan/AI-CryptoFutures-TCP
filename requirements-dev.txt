@@ -1,1 +1,4 @@
+-r requirements.txt
+alembic==1.17.2
 coverage==7.6.10
+psycopg[binary]==3.2.13
