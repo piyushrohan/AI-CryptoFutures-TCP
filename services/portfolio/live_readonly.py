@@ -69,7 +69,11 @@ def live_readonly_account_payload(
         fee_model_available=True,
     )
     reasons = list(result.reasons)
-    if not runtime.binance_credentials_present:
+    readonly_credentials_present = (
+        runtime.binance_live_readonly_credentials_present
+        or runtime.legacy_binance_credentials_present
+    )
+    if not readonly_credentials_present:
         reasons.append("read-only Binance credentials must be present in backend")
     accepted = result.accepted and not reasons
     audit_record = None

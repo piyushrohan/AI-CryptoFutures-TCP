@@ -15,7 +15,7 @@ services:
   api:
     image: python:3.12-slim
     working_dir: /workspace
-    command: ["python", "-m", "apps.api.server"]
+    command: ["sh", "-c", "python -m pip install -r requirements.txt >/dev/null && python -m apps.api.server"]
     volumes:
       - .:/workspace
     environment:
@@ -27,7 +27,11 @@ services:
       AUTONOMY_STAGE: observe_only
       MLOPS_APPROVAL_STATE: research_candidate
       LIVE_TRADING_ENABLED: "false"
-      SECRETS_BACKEND: local_dev_only
+      TCP_ADMIN_TOKEN: "${TCP_ADMIN_TOKEN:-}"
+      TCP_CSRF_TOKEN: "${TCP_CSRF_TOKEN:-}"
+      TCP_ACTOR_ID: "${TCP_ACTOR_ID:-local_owner}"
+      SECRETS_BACKEND: "${SECRETS_BACKEND:-env}"
+      DATABASE_URL: "postgresql://tcp_dev@postgres:5432/tcp_dev"
       API_PORT: "8080"
     ports:
       - "8080:8080"

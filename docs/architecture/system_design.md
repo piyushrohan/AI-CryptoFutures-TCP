@@ -144,10 +144,25 @@ The frontend communicates with the backend through authenticated HTTP APIs and e
 
 The architecture should support a modular monolith at the beginning and service separation later. Boundaries should be explicit in code and data ownership even before each boundary is deployed as an independent service.
 
+### Current Workstation Production Foundation
+
+The current implementation now includes a FastAPI `/api/v1` surface with
+single-owner bearer-token authentication, CSRF checks for mutating routes,
+Pydantic request contracts, an idempotent command-ledger contract, a
+Postgres/Alembic schema scaffold, redacted env/macOS Keychain secret-provider
+contracts, separated Binance credential purposes, a backend-only signed Binance
+REST client foundation, and monotonic reconciliation contracts.
+
+These foundations do not yet make authenticated Binance network workflows the
+source of truth. Testnet order submission, user data stream reconciliation,
+durable Postgres repositories, authenticated `LIVE` read-only snapshots, and
+all live order submission remain future work.
+
 Related design documents:
 
 - [Frontend Control Surface](frontend_control_surface.md) maps operator screens and actions to backend commands.
 - [Local Bootstrap](local_bootstrap.md) defines the intended `make up` startup path and safe defaults.
+- [Workstation Production Readiness](../roadmap/workstation_production_readiness.md) tracks the first single-owner local production target.
 - [Binance USDⓈ-M Constraints](../binance/binance_usdm_constraints.md) captures Binance-specific venue assumptions.
 - [Fee and Symbol Policy](../binance/fee_and_symbol_policy.md) defines USDC-quoted pair preference and dynamic fee requirements.
 - [Three-Asset BTC/ETH Universe](../market_data/three_asset_universe.md) defines the initial executable, derived, and reference symbol roles.

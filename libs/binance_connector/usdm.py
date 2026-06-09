@@ -96,6 +96,14 @@ def backend_credential_metadata(config: RuntimeConfig) -> dict[str, object]:
         "credential_scope": config.credential_scope.value,
         "api_key_present": config.binance_api_key_present,
         "api_secret_present": config.binance_api_secret_present,
+        "testnet_api_key_present": config.binance_testnet_api_key_present,
+        "testnet_api_secret_present": config.binance_testnet_api_secret_present,
+        "live_readonly_api_key_present": (
+            config.binance_live_readonly_api_key_present
+        ),
+        "live_readonly_api_secret_present": (
+            config.binance_live_readonly_api_secret_present
+        ),
         "secrets_redacted": True,
     }
 
@@ -192,9 +200,21 @@ def validate_usdm_order_payload(
         VenueTarget.BINANCE_LIVE,
     }:
         reasons.append("Binance payload validation requires a Binance venue target")
-    if config.credential_scope == CredentialScope.NONE:
-        reasons.append("Binance payload validation requires exchange credentials")
-    if not config.binance_credentials_present:
+    if config.venue_target == VenueTarget.BINANCE_LIVE:
+        reasons.append("live Binance order payload validation is out of scope")
+    if config.credential_scope != CredentialScope.TRADING:
+        reasons.append("Binance order payload validation requires trading credentials")
+    if config.venue_target == VenueTarget.BINANCE_TESTNET:
+        purpose_credentials_present = (
+            config.binance_testnet_credentials_present
+            or config.legacy_binance_credentials_present
+        )
+    else:
+        purpose_credentials_present = (
+            config.binance_live_readonly_credentials_present
+            or config.legacy_binance_credentials_present
+        )
+    if not purpose_credentials_present:
         reasons.append("Binance credentials must be present in the backend runtime")
     if not intent.post_only or intent.allow_taker:
         reasons.append("Binance validation remains maker-first and taker-gated")
